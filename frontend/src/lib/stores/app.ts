@@ -31,6 +31,21 @@ export const controlState = writable<ControlState>({
   isGenerating: false,
 });
 
+// Parameters store
+export const parameters = writable<Record<string, any>>({});
+
+// Parameter actions
+export const setParameters = (newParameters: Record<string, any>) => {
+  parameters.set(newParameters);
+};
+
+export const updateParameter = (key: string, value: any) => {
+  parameters.update(current => ({
+    ...current,
+    [key]: value
+  }));
+};
+
 // Side panel state store
 export const sidePanelState = writable<SidePanelState>({
   isOpen: false,

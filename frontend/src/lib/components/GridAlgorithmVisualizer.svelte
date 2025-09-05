@@ -11,7 +11,8 @@
 		setError,
 		showError,
 		showSuccess,
-		showInfo
+		showInfo,
+		parameters
 	} from '$lib/stores/app';
 	import { api } from '$lib/api';
 	import { trackAlgorithmExecution, trackUserInteraction } from '$lib/utils/analytics';
@@ -136,10 +137,13 @@
 			setGenerating(true);
 			setError(null);
 
-			const config = {
-				array_size: 20,
-				speed: 5 // API expects 1-10, use default value
-			};
+					// Get parameters from store or use defaults
+		const currentParams = $parameters;
+		const config = {
+			array_size: currentParams.arraySize || 20,
+			speed: 5, // API expects 1-10, use default value
+			...currentParams // Include all other parameters
+		};
 
 			const steps = await api.executeAlgorithm($selectedAlgorithm.id, config);
 			

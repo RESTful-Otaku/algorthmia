@@ -118,7 +118,7 @@
 	onmouseleave={handleMouseLeave}
 	onfocus={handleFocus}
 	onblur={handleBlur}
-	class="inline-block"
+	style="display: contents;"
 >
 	{@render children?.()}
 </div>
