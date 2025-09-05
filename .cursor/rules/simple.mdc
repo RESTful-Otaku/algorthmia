@@ -1,0 +1,5 @@
+---
+description: Simple is best unless unavoidable for performance or optimisations or complexity due to maintenance and readability or organisation of code and architecture.
+globs:
+alwaysApply: true
+---

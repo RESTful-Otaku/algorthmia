@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/spf13/viper"
 )
@@ -107,9 +108,15 @@ func overrideWithEnv(config *Config) {
 		config.Server.Host = host
 	}
 	if port := os.Getenv("SERVER_PORT"); port != "" {
-		config.Server.Port = viper.GetInt("server.port")
+		if parsedPort, err := strconv.Atoi(port); err == nil && parsedPort > 0 && parsedPort <= 65535 {
+			config.Server.Port = parsedPort
+		}
 	}
 	if level := os.Getenv("LOG_LEVEL"); level != "" {
-		config.Logging.Level = level
+		// Validate log level
+		validLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true, "fatal": true, "panic": true}
+		if validLevels[level] {
+			config.Logging.Level = level
+		}
 	}
 }

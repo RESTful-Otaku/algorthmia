@@ -10,6 +10,7 @@ import (
 	"algorthmia/backend/internal/algorithm/sorting"
 	"algorthmia/backend/internal/api"
 	"algorthmia/backend/internal/config"
+	"algorthmia/backend/internal/middleware"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -83,6 +84,10 @@ func (s *Server) Start() error {
 	// Add middleware
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.RateLimit())
+	router.Use(middleware.RequestSizeLimit(1024 * 1024)) // 1MB limit
+	router.Use(middleware.Timeout(30 * time.Second))
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     s.config.CORS.AllowedOrigins,
 		AllowMethods:     s.config.CORS.AllowedMethods,

@@ -1,0 +1,5 @@
+---
+description: Only add new files if required. Try to tweak existing files unless it is something new or reorgaansing code location for maintaining/readability and locality. 
+globs:
+alwaysApply: true
+---

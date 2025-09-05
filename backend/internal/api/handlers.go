@@ -1,7 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
+	"regexp"
 
 	"algorthmia/backend/internal/algorithm"
 	"algorthmia/backend/internal/models"
@@ -80,11 +82,38 @@ func (h *Handler) GetAlgorithm(c *gin.Context) {
 func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 	algorithmID := c.Param("id")
 	
+	// Validate algorithm ID
+	if algorithmID == "" {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   "Algorithm ID is required",
+		})
+		return
+	}
+	
+	// Sanitize algorithm ID to prevent path traversal
+	if len(algorithmID) > 50 || !isValidAlgorithmID(algorithmID) {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   "Invalid algorithm ID format",
+		})
+		return
+	}
+	
 	var config models.AlgorithmConfig
 	if err := c.ShouldBindJSON(&config); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
 			Error:   "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+	
+	// Validate and sanitize configuration
+	if err := validateAlgorithmConfig(&config); err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{
+			Success: false,
+			Error:   "Invalid configuration: " + err.Error(),
 		})
 		return
 	}
@@ -159,4 +188,62 @@ func (h *Handler) SetupRoutes(r *gin.Engine) {
 		api.GET("/algorithms/:id/config", h.GetAlgorithmConfig)
 		api.POST("/algorithms/:id/execute", h.ExecuteAlgorithm)
 	}
+}
+
+// isValidAlgorithmID validates algorithm ID format
+func isValidAlgorithmID(id string) bool {
+	// Only allow alphanumeric characters, underscores, and hyphens
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_-]+$`, id)
+	return matched
+}
+
+// validateAlgorithmConfig validates and sanitizes algorithm configuration
+func validateAlgorithmConfig(config *models.AlgorithmConfig) error {
+	// Validate array size
+	if config.ArraySize < 1 {
+		return fmt.Errorf("array size must be at least 1")
+	}
+	if config.ArraySize > 1000 {
+		return fmt.Errorf("array size cannot exceed 1000")
+	}
+	
+	// Validate speed
+	if config.Speed < 1 {
+		return fmt.Errorf("speed must be at least 1")
+	}
+	if config.Speed > 10 {
+		return fmt.Errorf("speed cannot exceed 10")
+	}
+	
+	// Validate data if provided
+	if len(config.Data) > 0 {
+		if len(config.Data) != config.ArraySize {
+			return fmt.Errorf("data length must match array size")
+		}
+		
+		// Validate data values
+		for i, value := range config.Data {
+			if value < -10000 || value > 10000 {
+				return fmt.Errorf("data value at index %d is out of range", i)
+			}
+		}
+	}
+	
+	// Validate custom parameters
+	if config.CustomParams != nil {
+		for key, value := range config.CustomParams {
+			if len(key) > 50 {
+				return fmt.Errorf("custom parameter key too long: %s", key)
+			}
+			// Only allow basic types
+			switch value.(type) {
+			case string, int, float64, bool:
+				continue
+			default:
+				return fmt.Errorf("invalid custom parameter type for key: %s", key)
+			}
+		}
+	}
+	
+	return nil
 }

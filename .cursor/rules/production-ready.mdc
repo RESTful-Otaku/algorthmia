@@ -1,0 +1,5 @@
+---
+description: Make sure everything builds, works correctly and any tests pass
+globs:
+alwaysApply: true
+---

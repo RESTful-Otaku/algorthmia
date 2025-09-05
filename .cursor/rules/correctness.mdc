@@ -1,0 +1,5 @@
+---
+description: Always use tigerstyle, asserts and DST (Deterministic Sim Testing) for abosulte correctness and Jest/Go testing for all critical paths, APIs, endpoints, important code. No errors warnings etc. 
+globs:
+alwaysApply: true
+---

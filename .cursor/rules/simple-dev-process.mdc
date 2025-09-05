@@ -1,0 +1,5 @@
+---
+description: Minimal focused testing, simple script for building, testing and running locally for fast iteration.
+globs:
+alwaysApply: true
+---

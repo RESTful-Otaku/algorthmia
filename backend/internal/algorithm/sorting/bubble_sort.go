@@ -50,18 +50,16 @@ func (bs *BubbleSort) Execute(ctx context.Context, config models.AlgorithmConfig
 	stepNumber := 0
 
 	// Add initial step
-	steps = append(steps, models.AlgorithmStep{
-		StepNumber: stepNumber,
-		Action:     "initialize",
-		Data:       make([]int, len(arr)),
-		Highlights: []int{},
-		Metadata: map[string]interface{}{
+	steps = append(steps, createStep(
+		stepNumber,
+		"initialize",
+		arr,
+		[]int{},
+		map[string]interface{}{
 			"description": "Starting bubble sort algorithm",
 			"array_size":  len(arr),
 		},
-		Timestamp: time.Now(),
-	})
-	copy(steps[stepNumber].Data, arr)
+	))
 	stepNumber++
 
 	n := len(arr)
@@ -71,10 +69,12 @@ func (bs *BubbleSort) Execute(ctx context.Context, config models.AlgorithmConfig
 		swapped = false
 
 		// Add step showing current pass
+		passData := make([]int, len(arr))
+		copy(passData, arr)
 		steps = append(steps, models.AlgorithmStep{
 			StepNumber: stepNumber,
 			Action:     "pass_start",
-			Data:       make([]int, len(arr)),
+			Data:       passData,
 			Highlights: []int{i},
 			Metadata: map[string]interface{}{
 				"description": fmt.Sprintf("Starting pass %d", i+1),
@@ -83,7 +83,6 @@ func (bs *BubbleSort) Execute(ctx context.Context, config models.AlgorithmConfig
 			},
 			Timestamp: time.Now(),
 		})
-		copy(steps[stepNumber].Data, arr)
 		stepNumber++
 
 		for j := 0; j < n-i-1; j++ {
@@ -236,5 +235,25 @@ func (bs *BubbleSort) GetDefaultConfig() models.AlgorithmConfig {
 			"show_comparisons": true,
 			"show_swaps":       true,
 		},
+	}
+}
+
+// createStep creates a new algorithm step with proper memory allocation
+func createStep(stepNumber int, action string, data []int, highlights []int, metadata map[string]interface{}) models.AlgorithmStep {
+	// Create a copy of data to avoid memory leaks
+	stepData := make([]int, len(data))
+	copy(stepData, data)
+	
+	// Create a copy of highlights
+	stepHighlights := make([]int, len(highlights))
+	copy(stepHighlights, highlights)
+	
+	return models.AlgorithmStep{
+		StepNumber: stepNumber,
+		Action:     action,
+		Data:       stepData,
+		Highlights: stepHighlights,
+		Metadata:   metadata,
+		Timestamp:  time.Now(),
 	}
 }
