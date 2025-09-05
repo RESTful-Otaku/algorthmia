@@ -81,8 +81,8 @@
 
 	// Reactive statements to clamp values
 	$effect(() => {
-		gridWidth = clampValue(gridWidth, 5, 50);
-		gridHeight = clampValue(gridHeight, 5, 50);
+		gridWidth = clampValue(gridWidth, 5, 15);
+		gridHeight = clampValue(gridHeight, 5, 15);
 		arraySize = clampValue(arraySize, 5, 50);
 		targetValue = clampValue(targetValue, 1, 100);
 		numNodes = clampValue(numNodes, 3, 20);
@@ -99,6 +99,10 @@
 
 	function randomizeParameters() {
 		if (!$selectedAlgorithm) return;
+
+		// Randomize grid size within new limits
+		gridWidth = clampValue(Math.floor(Math.random() * 11) + 5, 5, 15);
+		gridHeight = clampValue(Math.floor(Math.random() * 11) + 5, 5, 15);
 
 		switch ($selectedAlgorithm.category) {
 			case 'Sorting':
@@ -158,12 +162,12 @@
 							type="range"
 							bind:value={gridWidth}
 							min="5"
-							max="50"
+							max="15"
 							class="control-slider"
 						/>
 						<div class="slider-labels">
 							<span>5</span>
-							<span>50</span>
+							<span>15</span>
 						</div>
 					</div>
 					<div class="parameter-control">
@@ -173,12 +177,12 @@
 							type="range"
 							bind:value={gridHeight}
 							min="5"
-							max="50"
+							max="15"
 							class="control-slider"
 						/>
 						<div class="slider-labels">
 							<span>5</span>
-							<span>50</span>
+							<span>15</span>
 						</div>
 					</div>
 				</div>
