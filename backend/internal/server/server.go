@@ -41,6 +41,26 @@ func NewServer(cfg *config.Config) *Server {
 		logger.WithError(err).Fatal("Failed to register bubble sort algorithm")
 	}
 
+	selectionSort := sorting.NewSelectionSort()
+	if err := algorithmManager.RegisterAlgorithm(selectionSort); err != nil {
+		logger.WithError(err).Fatal("Failed to register selection sort algorithm")
+	}
+
+	insertionSort := sorting.NewInsertionSort()
+	if err := algorithmManager.RegisterAlgorithm(insertionSort); err != nil {
+		logger.WithError(err).Fatal("Failed to register insertion sort algorithm")
+	}
+
+	mergeSort := sorting.NewMergeSort()
+	if err := algorithmManager.RegisterAlgorithm(mergeSort); err != nil {
+		logger.WithError(err).Fatal("Failed to register merge sort algorithm")
+	}
+
+	quickSort := sorting.NewQuickSort()
+	if err := algorithmManager.RegisterAlgorithm(quickSort); err != nil {
+		logger.WithError(err).Fatal("Failed to register quick sort algorithm")
+	}
+
 	return &Server{
 		config:          cfg,
 		algorithmManager: algorithmManager,
