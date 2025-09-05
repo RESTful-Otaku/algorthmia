@@ -30,7 +30,7 @@
 	let animationSpeed = $state(''); // Default to empty to show "Mul" placeholder - speeds: 1, 2, 4, 8, 16
 
 	// Calculate CSS animation duration based on speed multiplier
-	let cssAnimationDuration = $derived(() => {
+	let cssAnimationDuration = $derived((): number => {
 		const speed = parseFloat(animationSpeed) || 1;
 		const baseDuration = 0.5; // Base duration in seconds
 		return baseDuration / speed;
@@ -39,9 +39,10 @@
 	// Update CSS custom properties when animation speed changes
 	$effect(() => {
 		if (browser && container) {
-			container.style.setProperty('--animation-duration', `${cssAnimationDuration}s`);
-			container.style.setProperty('--animation-duration-fast', `${cssAnimationDuration * 0.8}s`);
-			container.style.setProperty('--animation-duration-slow', `${cssAnimationDuration * 1.2}s`);
+			const duration = Number(cssAnimationDuration);
+			container.style.setProperty('--animation-duration', `${duration}s`);
+			container.style.setProperty('--animation-duration-fast', `${duration * 0.8}s`);
+			container.style.setProperty('--animation-duration-slow', `${duration * 1.2}s`);
 		}
 	});
 
@@ -67,8 +68,8 @@
 		
 		try {
 			// Set up custom event listeners
-					window.addEventListener('generateData', handleGenerateData);
-		window.addEventListener('resetData', handleResetData);
+			window.addEventListener('generateData', handleGenerateData);
+			window.addEventListener('resetData', handleResetData);
 
 			// Show initial blank grid
 			showBlankGrid();
@@ -103,11 +104,16 @@
 	function showBlankGrid() {
 		if (!container) return;
 		
-		// Create a blank grid with dots
+		// Get grid dimensions from parameters
+		const currentParams = $parameters;
+		const gridWidth = currentParams.gridWidth || 10;
+		const gridHeight = currentParams.gridHeight || 10;
+		
+		// Create a blank grid with dots based on parameters
 		const blankGrid: any[][] = [];
-		for (let y = 0; y < 5; y++) {
+		for (let y = 0; y < gridHeight; y++) {
 			blankGrid[y] = [];
-			for (let x = 0; x < 5; x++) {
+			for (let x = 0; x < gridWidth; x++) {
 				blankGrid[y][x] = {
 					x,
 					y,
@@ -137,12 +143,22 @@
 			setGenerating(true);
 			setError(null);
 
-					// Get parameters from store or use defaults
+							// Get parameters from store or use defaults
 		const currentParams = $parameters;
 		const config = {
 			array_size: currentParams.arraySize || 20,
 			speed: 5, // API expects 1-10, use default value
-			...currentParams // Include all other parameters
+			// Map other parameters to snake_case for API
+			grid_width: currentParams.gridWidth,
+			grid_height: currentParams.gridHeight,
+			target_value: currentParams.targetValue,
+			num_nodes: currentParams.numNodes,
+			num_edges: currentParams.numEdges,
+			start_node: currentParams.startNode,
+			end_node: currentParams.endNode,
+			maze_width: currentParams.mazeWidth,
+			maze_height: currentParams.mazeHeight,
+			n_queens_size: currentParams.nQueensSize
 		};
 
 			const steps = await api.executeAlgorithm($selectedAlgorithm.id, config);
@@ -461,6 +477,13 @@
 			showBlankGrid();
 		}
 	});
+
+	// Watch for parameter changes and update grid
+	$effect(() => {
+		if (isInitialized && $parameters) {
+			showBlankGrid();
+		}
+	});
 </script>
 
 <div class="grid-visualizer-container">
@@ -516,7 +539,7 @@
 					<Pause class="w-4 h-4" />
 				{:else}
 					<Play class="w-4 h-4" />
-				{/if}
+		{/if}
 			</button>
 
 			<button 
