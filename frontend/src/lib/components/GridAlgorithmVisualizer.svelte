@@ -145,7 +145,7 @@
 
 							// Get parameters from store or use defaults
 		const currentParams = $parameters;
-		const config = {
+			const config = {
 			array_size: currentParams.arraySize || 20,
 			speed: 5, // API expects 1-10, use default value
 			// Map other parameters to snake_case for API
@@ -159,7 +159,7 @@
 			maze_width: currentParams.mazeWidth,
 			maze_height: currentParams.mazeHeight,
 			n_queens_size: currentParams.nQueensSize
-		};
+			};
 
 			const steps = await api.executeAlgorithm($selectedAlgorithm.id, config);
 			
@@ -360,17 +360,20 @@
 		
 		container.innerHTML = '';
 		
+		// Get grid dimensions from parameters
+		const currentParams = $parameters;
+		const paramGridWidth = currentParams.gridWidth || 10;
+		const paramGridHeight = currentParams.gridHeight || 10;
+		
 		// Calculate responsive grid dimensions
 		const containerRect = container.getBoundingClientRect();
 		const availableWidth = containerRect.width - 32; // Account for padding
 		const availableHeight = containerRect.height - 32;
 		
-		// Calculate grid size based on available space
-		const dataLength = step.data.length;
-		const gridSize = Math.ceil(Math.sqrt(dataLength));
+		// Use parameter dimensions instead of calculating from data length
 		const cellSize = Math.min(
-			Math.floor(availableWidth / gridSize),
-			Math.floor(availableHeight / gridSize),
+			Math.floor(availableWidth / paramGridWidth),
+			Math.floor(availableHeight / paramGridHeight),
 			80 // Maximum cell size
 		);
 		
@@ -378,14 +381,14 @@
 		const minCellSize = 30;
 		const finalCellSize = Math.max(cellSize, minCellSize);
 		
-		const gridWidth = finalCellSize * gridSize;
-		const gridHeight = finalCellSize * gridSize;
+		const gridWidth = finalCellSize * paramGridWidth;
+		const gridHeight = finalCellSize * paramGridHeight;
 		
 		const gridElement = document.createElement('div');
 		gridElement.className = 'responsive-grid';
 		gridElement.style.cssText = `
 			display: grid;
-			grid-template-columns: repeat(${gridSize}, 1fr);
+			grid-template-columns: repeat(${paramGridWidth}, 1fr);
 			gap: 2px;
 			width: ${gridWidth}px;
 			height: ${gridHeight}px;
@@ -397,6 +400,10 @@
 		step.data.forEach((value: number, index: number) => {
 			const cellElement = document.createElement('div');
 			cellElement.className = 'grid-cell';
+			
+			// Convert 1D index to 2D coordinates using parameter dimensions
+			const x = index % paramGridWidth;
+			const y = Math.floor(index / paramGridWidth);
 			
 			const isHighlighted = step.highlights?.includes(index) || false;
 			
@@ -420,7 +427,7 @@
 				z-index: 1;
 			`;
 			cellElement.textContent = value.toString();
-			cellElement.onclick = () => handleCellClick(index, 0, { value, type: 'array', x: index, y: 0 });
+			cellElement.onclick = () => handleCellClick(x, y, { value, type: 'array', x, y });
 			gridElement.appendChild(cellElement);
 		});
 		
