@@ -5,7 +5,14 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	server: {
 		port: 5173,
-		host: true
+		host: true,
+		proxy: {
+			'/api': {
+				target: 'http://localhost:8080',
+				changeOrigin: true,
+				secure: false
+			}
+		}
 	},
 	build: {
 		target: 'esnext',

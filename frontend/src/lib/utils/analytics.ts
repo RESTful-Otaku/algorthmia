@@ -5,7 +5,10 @@ export class PerformanceAnalytics {
 	private observers: PerformanceObserver[] = [];
 
 	private constructor() {
-		this.initializePerformanceMonitoring();
+		// Only initialize performance monitoring in the browser
+		if (typeof window !== 'undefined') {
+			this.initializePerformanceMonitoring();
+		}
 	}
 
 	public static getInstance(): PerformanceAnalytics {
@@ -16,6 +19,9 @@ export class PerformanceAnalytics {
 	}
 
 	private initializePerformanceMonitoring() {
+		// Only run in browser environment
+		if (typeof window === 'undefined') return;
+		
 		// Monitor Core Web Vitals
 		this.observeLCP();
 		this.observeFID();
@@ -25,7 +31,7 @@ export class PerformanceAnalytics {
 	}
 
 	private observeLCP() {
-		if ('PerformanceObserver' in window) {
+		if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
 			const observer = new PerformanceObserver((list) => {
 				const entries = list.getEntries();
 				const lastEntry = entries[entries.length - 1];
@@ -38,7 +44,7 @@ export class PerformanceAnalytics {
 	}
 
 	private observeFID() {
-		if ('PerformanceObserver' in window) {
+		if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
 			const observer = new PerformanceObserver((list) => {
 				const entries = list.getEntries();
 				entries.forEach((entry) => {
@@ -55,7 +61,7 @@ export class PerformanceAnalytics {
 	}
 
 	private observeCLS() {
-		if ('PerformanceObserver' in window) {
+		if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
 			let clsValue = 0;
 			const observer = new PerformanceObserver((list) => {
 				const entries = list.getEntries();
@@ -73,7 +79,7 @@ export class PerformanceAnalytics {
 	}
 
 	private observeFCP() {
-		if ('PerformanceObserver' in window) {
+		if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
 			const observer = new PerformanceObserver((list) => {
 				const entries = list.getEntries();
 				entries.forEach((entry) => {
@@ -87,7 +93,7 @@ export class PerformanceAnalytics {
 	}
 
 	private observeTTFB() {
-		if ('PerformanceObserver' in window) {
+		if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
 			const observer = new PerformanceObserver((list) => {
 				const entries = list.getEntries();
 				entries.forEach((entry) => {
@@ -153,8 +159,10 @@ export class PerformanceAnalytics {
 	}
 
 	public destroy() {
-		this.observers.forEach(observer => observer.disconnect());
-		this.observers = [];
+		if (typeof window !== 'undefined') {
+			this.observers.forEach(observer => observer.disconnect());
+			this.observers = [];
+		}
 	}
 }
 

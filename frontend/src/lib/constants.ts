@@ -2,7 +2,7 @@
 
 // API Configuration
 export const API_CONFIG = {
-	BASE_URL: 'http://localhost:8080',
+	BASE_URL: '', // Use relative paths to work with Vite proxy
 	ENDPOINTS: {
 		HEALTH: '/api/v1/health',
 		ALGORITHMS: '/api/v1/algorithms',

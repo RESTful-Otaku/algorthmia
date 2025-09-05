@@ -73,28 +73,28 @@
 	function getTypeClasses() {
 		switch (type) {
 			case 'error':
-				return 'bg-red-50 border-red-200 text-red-800';
+				return 'error-notification';
 			case 'success':
-				return 'bg-green-50 border-green-200 text-green-800';
+				return 'success-notification';
 			case 'warning':
-				return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+				return 'warning-notification';
 			case 'info':
 			default:
-				return 'bg-blue-50 border-blue-200 text-blue-800';
+				return 'info-notification';
 		}
 	}
 
 	function getProgressClasses() {
 		switch (type) {
 			case 'error':
-				return 'bg-red-500';
+				return 'error-progress';
 			case 'success':
-				return 'bg-green-500';
+				return 'success-progress';
 			case 'warning':
-				return 'bg-yellow-500';
+				return 'warning-progress';
 			case 'info':
 			default:
-				return 'bg-blue-500';
+				return 'info-progress';
 		}
 	}
 
@@ -103,11 +103,20 @@
 
 {#if visible}
 	<div 
-		class="fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 {getTypeClasses()} transform transition-all duration-300 ease-in-out {visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}"
-		role="alert"
+		class="notification-toast {getTypeClasses()} {visible ? 'visible' : 'hidden'}"
+		role="button"
 		aria-live="polite"
+		onclick={dismiss}
+		onkeydown={(e) => {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				dismiss();
+			}
+		}}
+		tabindex="0"
+		aria-label="Click to dismiss notification"
 	>
-		<div class="p-4">
+		<div class="notification-content">
 			<div class="flex items-start">
 				<div class="flex-shrink-0">
 					<IconComponent class="h-5 w-5" />
@@ -124,8 +133,11 @@
 					<div class="ml-4 flex-shrink-0 flex">
 						<button
 							type="button"
-							class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-md"
-							onclick={dismiss}
+							class="dismiss-button"
+							onclick={(e) => {
+								e.stopPropagation();
+								dismiss();
+							}}
 							aria-label="Dismiss notification"
 						>
 							<X class="h-4 w-4" />
@@ -136,12 +148,134 @@
 		</div>
 		
 		{#if duration > 0}
-			<div class="h-1 bg-gray-200 rounded-b-lg overflow-hidden">
+			<div class="progress-container">
 				<div 
-					class="h-full {getProgressClasses()} transition-all duration-100 ease-linear"
+					class="progress-bar {getProgressClasses()}"
 					style="width: {progress}%"
 				></div>
 			</div>
 		{/if}
 	</div>
 {/if}
+
+<style>
+	.notification-toast {
+		position: fixed;
+		top: 1rem;
+		right: 1rem;
+		z-index: 10001;
+		max-width: 24rem;
+		width: 100%;
+		border-radius: 0.5rem;
+		box-shadow: var(--shadow-lg);
+		border-left: 4px solid;
+		transform: translateX(0);
+		opacity: 1;
+		transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+		cursor: pointer;
+		animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.notification-toast.hidden {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+
+	/* Notification type styles */
+	.error-notification {
+		background: var(--bg-primary);
+		border-left-color: var(--error);
+		color: var(--text-primary);
+	}
+
+	.success-notification {
+		background: var(--bg-primary);
+		border-left-color: var(--success);
+		color: var(--text-primary);
+	}
+
+	.warning-notification {
+		background: var(--bg-primary);
+		border-left-color: var(--warning);
+		color: var(--text-primary);
+	}
+
+	.info-notification {
+		background: var(--bg-primary);
+		border-left-color: var(--info);
+		color: var(--text-primary);
+	}
+
+	.dismiss-button {
+		display: inline-flex;
+		color: var(--text-tertiary);
+		transition: color 0.2s ease;
+		border-radius: 0.375rem;
+		padding: 0.25rem;
+	}
+
+	.dismiss-button:hover {
+		color: var(--text-secondary);
+	}
+
+	.dismiss-button:focus {
+		outline: 2px solid var(--accent-primary);
+		outline-offset: 2px;
+	}
+
+	.progress-container {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 100%;
+		background: var(--bg-tertiary);
+		border-radius: 0.5rem;
+		overflow: hidden;
+		z-index: 0;
+	}
+
+	.progress-bar {
+		position: absolute;
+		top: 0;
+		left: 0;
+		height: 100%;
+		transition: width 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+		opacity: 0.3;
+		z-index: 1;
+	}
+
+	.error-progress {
+		background: var(--error);
+	}
+
+	.success-progress {
+		background: var(--success);
+	}
+
+	.warning-progress {
+		background: var(--warning);
+	}
+
+	.info-progress {
+		background: var(--info);
+	}
+
+	.notification-content {
+		position: relative;
+		z-index: 2;
+		padding: 1rem;
+	}
+
+	@keyframes slideInRight {
+		from {
+			transform: translateX(100%);
+			opacity: 0;
+		}
+		to {
+			transform: translateX(0);
+			opacity: 1;
+		}
+	}
+</style>

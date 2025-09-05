@@ -61,7 +61,7 @@ func (qs *QuickSort) Execute(ctx context.Context, config models.AlgorithmConfig)
 		},
 		Timestamp: time.Now(),
 	})
-	copy(steps[stepNumber].Data, arr)
+	copy(steps[len(steps)-1].Data, arr)
 	stepNumber++
 
 	// Execute quick sort
@@ -80,7 +80,7 @@ func (qs *QuickSort) Execute(ctx context.Context, config models.AlgorithmConfig)
 		},
 		Timestamp: time.Now(),
 	})
-	copy(steps[stepNumber].Data, arr)
+	copy(steps[len(steps)-1].Data, arr)
 
 	return steps, nil
 }
@@ -108,7 +108,7 @@ func (qs *QuickSort) quickSort(ctx context.Context, arr []int, low, high int, st
 			},
 			Timestamp: time.Now(),
 		})
-		copy(steps[*stepNumber].Data, arr)
+		copy(steps[len(steps)-1].Data, arr)
 		*stepNumber++
 
 		// Partition the array and get pivot index
@@ -127,7 +127,7 @@ func (qs *QuickSort) quickSort(ctx context.Context, arr []int, low, high int, st
 			},
 			Timestamp: time.Now(),
 		})
-		copy(steps[*stepNumber].Data, arr)
+		copy(steps[len(steps)-1].Data, arr)
 		*stepNumber++
 
 		// Recursively sort elements before and after partition
@@ -164,7 +164,7 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 		},
 		Timestamp: time.Now(),
 	})
-	copy(steps[*stepNumber].Data, arr)
+	copy(steps[len(steps)-1].Data, arr)
 	*stepNumber++
 
 	for j := low; j < high; j++ {
@@ -190,7 +190,7 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 			},
 			Timestamp: time.Now(),
 		})
-		copy(steps[*stepNumber].Data, arr)
+		copy(steps[len(steps)-1].Data, arr)
 		*stepNumber++
 
 		if arr[j] < pivot {
@@ -209,7 +209,7 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 				},
 				Timestamp: time.Now(),
 			})
-			copy(steps[*stepNumber].Data, arr)
+			copy(steps[len(steps)-1].Data, arr)
 			*stepNumber++
 
 			// Perform the swap
@@ -228,7 +228,7 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 				},
 				Timestamp: time.Now(),
 			})
-			copy(steps[*stepNumber].Data, arr)
+			copy(steps[len(steps)-1].Data, arr)
 			*stepNumber++
 
 			pivotIndex++
@@ -246,7 +246,7 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 				},
 				Timestamp: time.Now(),
 			})
-			copy(steps[*stepNumber].Data, arr)
+			copy(steps[len(steps)-1].Data, arr)
 			*stepNumber++
 		}
 	}
@@ -266,7 +266,7 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 		},
 		Timestamp: time.Now(),
 	})
-	copy(steps[*stepNumber].Data, arr)
+	copy(steps[len(steps)-1].Data, arr)
 	*stepNumber++
 
 	arr[pivotIndex], arr[high] = arr[high], arr[pivotIndex]
@@ -284,7 +284,7 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 		},
 		Timestamp: time.Now(),
 	})
-	copy(steps[*stepNumber].Data, arr)
+	copy(steps[len(steps)-1].Data, arr)
 	*stepNumber++
 
 	return pivotIndex

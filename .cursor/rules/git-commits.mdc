@@ -1,0 +1,5 @@
+---
+description: Always add and commit changes with useful message so rolling back to working states is easy.
+globs:
+alwaysApply: true
+---

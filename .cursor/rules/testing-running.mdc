@@ -1,0 +1,5 @@
+---
+description: Always use ./dev.sh when trying to run the app for testing changes/fixes.
+globs:
+alwaysApply: true
+---

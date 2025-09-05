@@ -4,7 +4,7 @@
 	import type { Notification } from '$lib/types';
 </script>
 
-<div class="fixed top-4 right-4 z-50 space-y-2">
+<div class="fixed top-4 right-4 z-[10002] space-y-2 animate-in fade-in-0 duration-300">
 	{#each $notifications as notification (notification.id)}
 		<ErrorToast
 			type={notification.type}

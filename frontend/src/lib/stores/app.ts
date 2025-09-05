@@ -27,7 +27,7 @@ export const controlState = writable<ControlState>({
   isPaused: false,
   currentStep: 0,
   totalSteps: 0,
-  speed: 5,
+  speed: 500, // 500ms delay between steps
   isGenerating: false,
 });
 
@@ -282,7 +282,7 @@ export const resetApp = () => {
     isPaused: false,
     currentStep: 0,
     totalSteps: 0,
-    speed: 5,
+    speed: 500, // 500ms delay between steps
     isGenerating: false,
   });
   sidePanelState.set({
@@ -298,19 +298,8 @@ export const resetApp = () => {
 
 // Computed values
 export const filteredAlgorithms = derived(
-  [algorithms, sidePanelState],
-  ([$algorithms, $sidePanelState]) => {
-    if (!$sidePanelState.searchQuery) {
-      return $algorithms;
-    }
-    
-    const query = $sidePanelState.searchQuery.toLowerCase();
-    return $algorithms.filter(algorithm =>
-      algorithm.name.toLowerCase().includes(query) ||
-      algorithm.description.toLowerCase().includes(query) ||
-      algorithm.category.toLowerCase().includes(query)
-    );
-  }
+  algorithms,
+  ($algorithms) => $algorithms
 );
 
 export const currentStep = derived(
