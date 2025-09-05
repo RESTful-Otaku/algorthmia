@@ -7,6 +7,7 @@
 	import ParameterWidgets from '$lib/components/ParameterWidgets.svelte';
 	import SidePanel from '$lib/components/SidePanel.svelte';
 	import NotificationContainer from '$lib/components/NotificationContainer.svelte';
+	import Tooltip from '$lib/components/ui/Tooltip.svelte';
 	import { 
 		algorithms, 
 		selectedAlgorithm, 
@@ -241,8 +242,18 @@
 		class="intro-modal-backdrop" 
 		onclick={handleModalBackdropClick}
 		onkeydown={(e) => e.key === 'Escape' && handleWelcomeClose()}
+		role="button"
+		tabindex="0"
+		aria-label="Click outside to close modal"
 	>
-		<div class="intro-modal" onclick={handleModalContentClick}>
+		<div 
+			class="intro-modal" 
+			onclick={handleModalContentClick}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="intro-title"
+		>
 			<!-- Progress Bar -->
 			<div class="intro-progress">
 				<div class="intro-progress-bar">
@@ -256,31 +267,37 @@
 			<!-- Content -->
 			<div class="intro-content">
 				<div class="intro-icon">{introSteps[currentIntroStep].icon}</div>
-				<h2 class="intro-title">{introSteps[currentIntroStep].title}</h2>
+				<h2 id="intro-title" class="intro-title">{introSteps[currentIntroStep].title}</h2>
 				<p class="intro-description">{introSteps[currentIntroStep].description}</p>
 			</div>
 
 			<!-- Navigation -->
 			<div class="intro-navigation">
+				<Tooltip text="Go to previous step" position="top">
 			<button 
-					class="intro-btn intro-btn-secondary" 
-					onclick={prevIntroStep}
-					disabled={currentIntroStep === 0}
-				>
-					Previous
-				</button>
-				<button 
-					class="intro-btn intro-btn-skip" 
-					onclick={skipIntro}
-				>
-					Skip
-				</button>
-			<button 
-					class="intro-btn intro-btn-primary" 
-					onclick={nextIntroStep}
+						class="intro-btn intro-btn-secondary" 
+						onclick={prevIntroStep}
+						disabled={currentIntroStep === 0}
 			>
-					{currentIntroStep === introSteps.length - 1 ? 'Get Started' : 'Next'}
+						Previous
 			</button>
+				</Tooltip>
+				<Tooltip text="Skip introduction and start using the app" position="top">
+					<button 
+						class="intro-btn intro-btn-skip" 
+						onclick={skipIntro}
+					>
+						Skip
+					</button>
+				</Tooltip>
+				<Tooltip text={currentIntroStep === introSteps.length - 1 ? 'Complete introduction and start using the app' : 'Go to next step'} position="top">
+					<button 
+						class="intro-btn intro-btn-primary" 
+						onclick={nextIntroStep}
+					>
+						{currentIntroStep === introSteps.length - 1 ? 'Get Started' : 'Next'}
+					</button>
+				</Tooltip>
 			</div>
 		</div>
 	</div>
@@ -288,20 +305,21 @@
 
 <!-- Hint Notifications -->
 {#if showHints}
-	<div class="fixed top-4 right-4 z-[10000] animate-in slide-in-from-right-4 fade-in-0 duration-500 ease-out">
-		<div 
-			class="bg-blue-100 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4 max-w-sm shadow-lg cursor-pointer"
-			onclick={toggleHints}
-			onkeydown={(e) => {
-				if (e.key === 'Enter' || e.key === ' ') {
-					e.preventDefault();
-					toggleHints();
-				}
-			}}
-			role="button"
-			tabindex="0"
-			aria-label="Click to dismiss hint"
-		>
+	<Tooltip text="Click to dismiss this helpful hint" position="left">
+		<div class="fixed top-4 right-4 z-[10000] animate-in slide-in-from-right-4 fade-in-0 duration-500 ease-out">
+			<div 
+				class="bg-blue-100 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4 max-w-sm shadow-lg cursor-pointer"
+				onclick={toggleHints}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						toggleHints();
+					}
+				}}
+				role="button"
+				tabindex="0"
+				aria-label="Click to dismiss hint"
+			>
 			<div class="flex items-start">
 				<div class="flex-shrink-0">
 					<svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
@@ -331,7 +349,8 @@
 				</div>
 			</div>
 		</div>
-	</div>
+		</div>
+	</Tooltip>
 {/if}
 
 <!-- Header -->
@@ -402,24 +421,26 @@
 		<div class="panel-content">
 			<!-- Algorithm Selection Section -->
 			<div class="collapsible-section">
-				<button 
-					class="section-header" 
-					onclick={() => isAlgorithmSectionOpen = !isAlgorithmSectionOpen}
-					onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), isAlgorithmSectionOpen = !isAlgorithmSectionOpen) : null}
-					aria-expanded={isAlgorithmSectionOpen}
-					aria-controls="algorithm-section-content"
-				>
-					<h2 class="section-title">Algorithm Selection</h2>
-					<svg 
-						class="collapse-icon" 
-						class:rotated={isAlgorithmSectionOpen}
-						fill="none" 
-						stroke="currentColor" 
-						viewBox="0 0 24 24"
+				<Tooltip text={isAlgorithmSectionOpen ? 'Collapse algorithm selection' : 'Expand algorithm selection'} position="right">
+					<button 
+						class="section-header" 
+						onclick={() => isAlgorithmSectionOpen = !isAlgorithmSectionOpen}
+						onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), isAlgorithmSectionOpen = !isAlgorithmSectionOpen) : null}
+						aria-expanded={isAlgorithmSectionOpen}
+						aria-controls="algorithm-section-content"
 					>
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-					</svg>
-				</button>
+						<h2 class="section-title">Algorithm Selection</h2>
+						<svg 
+							class="collapse-icon" 
+							class:rotated={isAlgorithmSectionOpen}
+							fill="none" 
+							stroke="currentColor" 
+							viewBox="0 0 24 24"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+						</svg>
+					</button>
+				</Tooltip>
 				<div 
 					class="section-content" 
 					class:expanded={isAlgorithmSectionOpen}
@@ -432,23 +453,26 @@
 								<svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 								</svg>
-								<input 
-									type="text" 
-									placeholder="Search algorithms..." 
-									bind:value={searchQuery}
-									class="search-input"
-								/>
+								<Tooltip text="Search through available algorithms by name, type, or description" position="bottom">
+									<input 
+										type="text" 
+										placeholder="Search algorithms..." 
+										bind:value={searchQuery}
+										class="search-input"
+									/>
+								</Tooltip>
 								{#if searchQuery}
-									<button 
-										onclick={clearSearch}
-										class="clear-button"
-										title="Clear search"
-										aria-label="Clear search"
-									>
-										<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-										</svg>
-									</button>
+									<Tooltip text="Clear search and show all algorithms" position="bottom">
+										<button 
+											onclick={clearSearch}
+											class="clear-button"
+											aria-label="Clear search"
+										>
+											<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+									</Tooltip>
 								{/if}
 							</div>
 						</div>
@@ -457,11 +481,12 @@
 					<!-- Algorithm Selection List -->
 					<div class="algorithm-list">
 						{#each getFilteredAlgorithms() as algorithm (algorithm.id)}
-							<button 
-								class="algorithm-item" 
-								class:selected={$selectedAlgorithm?.id === algorithm.id}
-								onclick={() => selectAlgorithm(algorithm)}
-							>
+							<Tooltip text={`Select ${algorithm.name} - ${algorithm.description}`} position="right">
+								<button 
+									class="algorithm-item" 
+									class:selected={$selectedAlgorithm?.id === algorithm.id}
+									onclick={() => selectAlgorithm(algorithm)}
+								>
 								<div class="algorithm-info">
 									<div class="algorithm-header">
 										<h3 class="algorithm-name">{algorithm.name}</h3>
@@ -479,7 +504,8 @@
 										</span>
 									</div>
 								</div>
-							</button>
+								</button>
+							</Tooltip>
 						{/each}
 					</div>
 
@@ -503,24 +529,26 @@
 
 			<!-- Parameter Widgets Section -->
 			<div class="collapsible-section">
+				<Tooltip text={isParameterSectionOpen ? 'Collapse parameter settings' : 'Expand parameter settings'} position="right">
 				<button 
-					class="section-header" 
-					onclick={() => isParameterSectionOpen = !isParameterSectionOpen}
-					onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), isParameterSectionOpen = !isParameterSectionOpen) : null}
-					aria-expanded={isParameterSectionOpen}
-					aria-controls="parameter-section-content"
-				>
-					<h2 class="section-title">Parameters</h2>
-					<svg 
-						class="collapse-icon" 
-						class:rotated={isParameterSectionOpen}
-						fill="none" 
-						stroke="currentColor" 
-						viewBox="0 0 24 24"
+						class="section-header" 
+						onclick={() => isParameterSectionOpen = !isParameterSectionOpen}
+						onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), isParameterSectionOpen = !isParameterSectionOpen) : null}
+						aria-expanded={isParameterSectionOpen}
+						aria-controls="parameter-section-content"
 					>
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+						<h2 class="section-title">Parameters</h2>
+						<svg 
+							class="collapse-icon" 
+							class:rotated={isParameterSectionOpen}
+							fill="none" 
+							stroke="currentColor" 
+							viewBox="0 0 24 24"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 					</svg>
 				</button>
+				</Tooltip>
 				<div 
 					class="section-content" 
 					class:expanded={isParameterSectionOpen}

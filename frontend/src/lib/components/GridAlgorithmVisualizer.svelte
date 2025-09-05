@@ -664,53 +664,10 @@
 		transition: color 0.3s ease;
 	}
 
-	.responsive-grid {
-		display: grid;
-		gap: 2px;
-		width: 100%;
-		height: 100%;
-		max-width: 100%;
-		max-height: 100%;
-		margin: 0 auto;
-	}
 
-	.grid-cell {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--bg-tertiary);
-		border: 1px solid var(--border-primary);
-		border-radius: 4px;
-		font-weight: 600;
-		font-size: 0.875rem;
-		color: var(--text-primary);
-		transition: all var(--animation-duration-fast, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
-		min-height: 40px;
-		min-width: 40px;
-		animation: cellAppear var(--animation-duration, 0.5s) cubic-bezier(0.4, 0, 0.2, 1);
-		position: relative;
-		z-index: 1;
-	}
 
-	.grid-cell.highlighted {
-		background: var(--accent-primary);
-		color: white;
-		border-color: var(--accent-secondary);
-		transform: scale(1.05);
-		box-shadow: var(--shadow-md);
-	}
 
-	.grid-cell.comparing {
-		background: var(--warning);
-		color: var(--text-primary);
-		border-color: var(--warning);
-	}
 
-	.grid-cell.swapping {
-		background: var(--error);
-		color: white;
-		border-color: var(--error);
-	}
 
 	.error {
 		background: #fed7d7;
@@ -1056,7 +1013,4 @@
 		75% { transform: translateX(2px); }
 	}
 
-	.grid-cell.highlighted {
-		animation: cellAppear var(--animation-duration, 0.5s) cubic-bezier(0.4, 0, 0.2, 1), cellJiggle var(--animation-duration-slow, 0.6s) ease-in-out var(--animation-duration, 0.5s);
-	}
 </style>
