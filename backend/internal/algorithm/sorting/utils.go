@@ -7,11 +7,13 @@ import (
 
 // generateRandomData generates an array of random integers
 func generateRandomData(size int) []int {
-	rand.Seed(time.Now().UnixNano())
+	// Use NewSource for better randomness (Go 1.20+)
+	source := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(source)
 	
 	data := make([]int, size)
 	for i := 0; i < size; i++ {
-		data[i] = rand.Intn(100) + 1 // Generate numbers between 1 and 100
+		data[i] = rng.Intn(100) + 1 // Generate numbers between 1 and 100
 	}
 	
 	return data
@@ -25,9 +27,4 @@ func isSorted(arr []int) bool {
 		}
 	}
 	return true
-}
-
-// swap swaps two elements in an array
-func swap(arr []int, i, j int) {
-	arr[i], arr[j] = arr[j], arr[i]
 }

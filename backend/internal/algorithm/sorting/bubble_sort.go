@@ -77,8 +77,8 @@ func (bs *BubbleSort) Execute(ctx context.Context, config models.AlgorithmConfig
 			Data:       passData,
 			Highlights: []int{i},
 			Metadata: map[string]interface{}{
-				"description": fmt.Sprintf("Starting pass %d", i+1),
-				"pass":        i + 1,
+				"description":  fmt.Sprintf("Starting pass %d", i+1),
+				"pass":         i + 1,
 				"total_passes": n - 1,
 			},
 			Timestamp: time.Now(),
@@ -243,11 +243,11 @@ func createStep(stepNumber int, action string, data []int, highlights []int, met
 	// Create a copy of data to avoid memory leaks
 	stepData := make([]int, len(data))
 	copy(stepData, data)
-	
+
 	// Create a copy of highlights
 	stepHighlights := make([]int, len(highlights))
 	copy(stepHighlights, highlights)
-	
+
 	return models.AlgorithmStep{
 		StepNumber: stepNumber,
 		Action:     action,

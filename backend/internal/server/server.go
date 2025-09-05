@@ -19,10 +19,10 @@ import (
 
 // Server represents the HTTP server
 type Server struct {
-	config          *config.Config
+	config           *config.Config
 	algorithmManager algorithm.Manager
-	httpServer      *http.Server
-	logger          *logrus.Logger
+	httpServer       *http.Server
+	logger           *logrus.Logger
 }
 
 // NewServer creates a new server instance
@@ -35,7 +35,7 @@ func NewServer(cfg *config.Config) *Server {
 
 	// Create algorithm manager and register algorithms
 	algorithmManager := algorithm.NewManager()
-	
+
 	// Register sorting algorithms
 	bubbleSort := sorting.NewBubbleSort()
 	if err := algorithmManager.RegisterAlgorithm(bubbleSort); err != nil {
@@ -63,9 +63,9 @@ func NewServer(cfg *config.Config) *Server {
 	}
 
 	return &Server{
-		config:          cfg,
+		config:           cfg,
 		algorithmManager: algorithmManager,
-		logger:          logger,
+		logger:           logger,
 	}
 }
 
@@ -129,14 +129,14 @@ func (s *Server) Start() error {
 // Stop gracefully stops the HTTP server
 func (s *Server) Stop(ctx context.Context) error {
 	s.logger.Info("Shutting down server...")
-	
+
 	if s.httpServer != nil {
 		if err := s.httpServer.Shutdown(ctx); err != nil {
 			s.logger.WithError(err).Error("Server shutdown failed")
 			return err
 		}
 	}
-	
+
 	s.logger.Info("Server stopped")
 	return nil
 }

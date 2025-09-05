@@ -216,8 +216,8 @@ func (bs *BubbleSortOptimized) GetDefaultConfig() models.AlgorithmConfig {
 		Speed:     5,
 		Data:      []int{},
 		CustomParams: map[string]interface{}{
-			"show_comparisons": true,
-			"show_swaps":       true,
+			"show_comparisons":  true,
+			"show_swaps":        true,
 			"early_termination": true,
 		},
 	}

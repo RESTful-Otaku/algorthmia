@@ -140,8 +140,7 @@
 							<Button
 								variant="ghost"
 								size="sm"
-								onClick={(e: Event) => {
-									e.stopPropagation();
+								onClick={() => {
 									toggleConfig();
 								}}
 							>

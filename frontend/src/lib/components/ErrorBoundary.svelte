@@ -92,39 +92,77 @@
 {/if}
 
 <style>
-	.error-boundary {
-		@apply p-8 text-center;
+	:global(.error-boundary) {
+		padding: 2rem;
+		text-align: center;
 	}
 	
-	.error-content {
-		@apply max-w-md mx-auto space-y-4;
+	:global(.error-content) {
+		max-width: 28rem;
+		margin: 0 auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
 	}
 	
-	.error-icon {
-		@apply text-red-500 mx-auto;
+	:global(.error-icon) {
+		color: #ef4444;
+		margin: 0 auto;
 	}
 	
-	.error-title {
-		@apply text-xl font-semibold text-gray-900 dark:text-gray-100;
+	:global(.error-title) {
+		font-size: 1.25rem;
+		font-weight: 600;
+		color: #111827;
 	}
 	
-	.error-message {
-		@apply text-gray-600 dark:text-gray-400;
+	:global(.dark .error-title) {
+		color: #f3f4f6;
 	}
 	
-	.error-details {
-		@apply text-left bg-gray-100 dark:bg-gray-800 rounded-lg p-4;
+	:global(.error-message) {
+		color: #6b7280;
 	}
 	
-	.error-details summary {
-		@apply cursor-pointer font-medium text-gray-900 dark:text-gray-100;
+	:global(.dark .error-message) {
+		color: #9ca3af;
 	}
 	
-	.error-stack {
-		@apply text-xs text-gray-600 dark:text-gray-400 mt-2 whitespace-pre-wrap;
+	:global(.error-details) {
+		text-align: left;
+		background-color: #f3f4f6;
+		border-radius: 0.5rem;
+		padding: 1rem;
 	}
 	
-	.error-actions {
-		@apply flex gap-3 justify-center;
+	:global(.dark .error-details) {
+		background-color: #1f2937;
+	}
+	
+	:global(.error-details summary) {
+		cursor: pointer;
+		font-weight: 500;
+		color: #111827;
+	}
+	
+	:global(.dark .error-details summary) {
+		color: #f3f4f6;
+	}
+	
+	:global(.error-stack) {
+		font-size: 0.75rem;
+		color: #6b7280;
+		margin-top: 0.5rem;
+		white-space: pre-wrap;
+	}
+	
+	:global(.dark .error-stack) {
+		color: #9ca3af;
+	}
+	
+	:global(.error-actions) {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: center;
 	}
 </style>

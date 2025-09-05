@@ -83,7 +83,7 @@
 	<!-- Algorithm Description (Collapsible) -->
 	{#if $selectedAlgorithm && showDescription}
 		<Collapsible isOpen={showDescription}>
-			{#snippet children({ isOpen, toggle })}
+			{#snippet children({ isOpen, toggle }: { isOpen: boolean; toggle: () => void })}
 				{#if isOpen}
 					<div class="mt-4 p-4 bg-secondary-50 dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-700">
 						<p class="text-sm text-secondary-700 dark:text-secondary-300 leading-relaxed">

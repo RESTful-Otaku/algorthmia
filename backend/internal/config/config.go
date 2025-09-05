@@ -10,9 +10,9 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Logging  LoggingConfig  `mapstructure:"logging"`
-	CORS     CORSConfig     `mapstructure:"cors"`
+	Server     ServerConfig    `mapstructure:"server"`
+	Logging    LoggingConfig   `mapstructure:"logging"`
+	CORS       CORSConfig      `mapstructure:"cors"`
 	Algorithms AlgorithmConfig `mapstructure:"algorithms"`
 }
 
@@ -39,12 +39,12 @@ type CORSConfig struct {
 
 // AlgorithmConfig holds algorithm-specific configuration
 type AlgorithmConfig struct {
-	MaxArraySize    int `mapstructure:"max_array_size"`
+	MaxArraySize     int `mapstructure:"max_array_size"`
 	DefaultArraySize int `mapstructure:"default_array_size"`
-	MinArraySize    int `mapstructure:"min_array_size"`
-	MaxSpeed        int `mapstructure:"max_speed"`
-	MinSpeed        int `mapstructure:"min_speed"`
-	DefaultSpeed    int `mapstructure:"default_speed"`
+	MinArraySize     int `mapstructure:"min_array_size"`
+	MaxSpeed         int `mapstructure:"max_speed"`
+	MinSpeed         int `mapstructure:"min_speed"`
+	DefaultSpeed     int `mapstructure:"default_speed"`
 }
 
 // Load loads configuration from file and environment variables

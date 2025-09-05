@@ -26,7 +26,7 @@ func NewHandler(algorithmManager algorithm.Manager) *Handler {
 // GetAlgorithms returns all available algorithms
 func (h *Handler) GetAlgorithms(c *gin.Context) {
 	algorithms := h.algorithmManager.ListAlgorithms()
-	
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    algorithms,
@@ -36,21 +36,21 @@ func (h *Handler) GetAlgorithms(c *gin.Context) {
 // GetAlgorithmsByType returns algorithms filtered by type
 func (h *Handler) GetAlgorithmsByType(c *gin.Context) {
 	algorithmType := c.Param("type")
-	
+
 	// Validate algorithm type
 	validType := models.AlgorithmType(algorithmType)
-	if validType != models.AlgorithmTypeSorting && 
-	   validType != models.AlgorithmTypeSearch && 
-	   validType != models.AlgorithmTypeGraph {
+	if validType != models.AlgorithmTypeSorting &&
+		validType != models.AlgorithmTypeSearch &&
+		validType != models.AlgorithmTypeGraph {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
 			Error:   "Invalid algorithm type. Must be one of: sorting, search, graph",
 		})
 		return
 	}
-	
+
 	algorithms := h.algorithmManager.ListAlgorithmsByType(validType)
-	
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    algorithms,
@@ -60,7 +60,7 @@ func (h *Handler) GetAlgorithmsByType(c *gin.Context) {
 // GetAlgorithm returns a specific algorithm by ID
 func (h *Handler) GetAlgorithm(c *gin.Context) {
 	algorithmID := c.Param("id")
-	
+
 	executor, err := h.algorithmManager.GetAlgorithm(algorithmID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.APIResponse{
@@ -69,9 +69,9 @@ func (h *Handler) GetAlgorithm(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	metadata := executor.GetMetadata()
-	
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    metadata,
@@ -81,7 +81,7 @@ func (h *Handler) GetAlgorithm(c *gin.Context) {
 // ExecuteAlgorithm executes an algorithm with the given configuration
 func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 	algorithmID := c.Param("id")
-	
+
 	// Validate algorithm ID
 	if algorithmID == "" {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -90,7 +90,7 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Sanitize algorithm ID to prevent path traversal
 	if len(algorithmID) > 50 || !isValidAlgorithmID(algorithmID) {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -99,7 +99,7 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	var config models.AlgorithmConfig
 	if err := c.ShouldBindJSON(&config); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -108,7 +108,7 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Validate and sanitize configuration
 	if err := validateAlgorithmConfig(&config); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -117,7 +117,7 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Set default values if not provided
 	if config.ArraySize == 0 {
 		config.ArraySize = 20
@@ -125,7 +125,7 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 	if config.Speed == 0 {
 		config.Speed = 5
 	}
-	
+
 	steps, err := h.algorithmManager.ExecuteAlgorithm(c.Request.Context(), algorithmID, config)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -134,7 +134,7 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    steps,
@@ -144,7 +144,7 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 // GetAlgorithmConfig returns the default configuration for an algorithm
 func (h *Handler) GetAlgorithmConfig(c *gin.Context) {
 	algorithmID := c.Param("id")
-	
+
 	executor, err := h.algorithmManager.GetAlgorithm(algorithmID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.APIResponse{
@@ -153,9 +153,9 @@ func (h *Handler) GetAlgorithmConfig(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	config := executor.GetDefaultConfig()
-	
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data:    config,
@@ -168,7 +168,7 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 		Success: true,
 		Message: "API is healthy",
 		Data: map[string]interface{}{
-			"status": "ok",
+			"status":  "ok",
 			"version": "1.0.0",
 		},
 	})
@@ -180,7 +180,7 @@ func (h *Handler) SetupRoutes(r *gin.Engine) {
 	{
 		// Health check
 		api.GET("/health", h.HealthCheck)
-		
+
 		// Algorithm endpoints
 		api.GET("/algorithms", h.GetAlgorithms)
 		api.GET("/algorithms/type/:type", h.GetAlgorithmsByType)
@@ -206,7 +206,7 @@ func validateAlgorithmConfig(config *models.AlgorithmConfig) error {
 	if config.ArraySize > 1000 {
 		return fmt.Errorf("array size cannot exceed 1000")
 	}
-	
+
 	// Validate speed
 	if config.Speed < 1 {
 		return fmt.Errorf("speed must be at least 1")
@@ -214,13 +214,13 @@ func validateAlgorithmConfig(config *models.AlgorithmConfig) error {
 	if config.Speed > 10 {
 		return fmt.Errorf("speed cannot exceed 10")
 	}
-	
+
 	// Validate data if provided
 	if len(config.Data) > 0 {
 		if len(config.Data) != config.ArraySize {
 			return fmt.Errorf("data length must match array size")
 		}
-		
+
 		// Validate data values
 		for i, value := range config.Data {
 			if value < -10000 || value > 10000 {
@@ -228,7 +228,7 @@ func validateAlgorithmConfig(config *models.AlgorithmConfig) error {
 			}
 		}
 	}
-	
+
 	// Validate custom parameters
 	if config.CustomParams != nil {
 		for key, value := range config.CustomParams {
@@ -244,6 +244,6 @@ func validateAlgorithmConfig(config *models.AlgorithmConfig) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
