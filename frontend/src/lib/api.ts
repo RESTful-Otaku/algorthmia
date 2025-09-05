@@ -5,9 +5,12 @@ import type {
   APIResponse 
 } from './types';
 import { validateAlgorithmConfig, validateAlgorithmId } from './utils/validation';
+import { SecureAPIClient, apiRateLimiter } from './utils/security';
+import { API_CONFIG } from './constants';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
-const REQUEST_TIMEOUT = 30000; // 30 seconds
+const API_BASE_URL = API_CONFIG.BASE_URL;
+const REQUEST_TIMEOUT = API_CONFIG.TIMEOUT;
+const secureClient = new SecureAPIClient(API_BASE_URL);
 
 class APIError extends Error {
   constructor(
@@ -91,12 +94,17 @@ async function request<T>(
 export const api = {
   // Health check
   async healthCheck(): Promise<{ status: string; version: string }> {
-    return request<{ status: string; version: string }>('/health');
+    return request<{ status: string; version: string }>(API_CONFIG.ENDPOINTS.HEALTH);
   },
 
   // Algorithm endpoints
   async getAlgorithms(): Promise<Algorithm[]> {
-    return request<Algorithm[]>('/algorithms');
+    // Check rate limit
+    if (!apiRateLimiter.isAllowed('get-algorithms')) {
+      throw new APIError('Rate limit exceeded', 429);
+    }
+
+    return request<Algorithm[]>(API_CONFIG.ENDPOINTS.ALGORITHMS);
   },
 
   async getAlgorithmsByType(type: string): Promise<Algorithm[]> {
@@ -110,7 +118,7 @@ export const api = {
       throw new APIError(`Invalid algorithm ID: ${validation.errors.join(', ')}`, 400);
     }
     
-    return request<Algorithm>(`/algorithms/${id}`);
+    return request<Algorithm>(API_CONFIG.ENDPOINTS.ALGORITHM_BY_ID(id));
   },
 
   async getAlgorithmConfig(id: string): Promise<AlgorithmConfig> {
@@ -120,7 +128,7 @@ export const api = {
       throw new APIError(`Invalid algorithm ID: ${validation.errors.join(', ')}`, 400);
     }
     
-    return request<AlgorithmConfig>(`/algorithms/${id}/config`);
+    return request<AlgorithmConfig>(API_CONFIG.ENDPOINTS.ALGORITHM_CONFIG(id));
   },
 
   async executeAlgorithm(id: string, config: AlgorithmConfig): Promise<AlgorithmStep[]> {
@@ -136,7 +144,7 @@ export const api = {
       throw new APIError(`Invalid configuration: ${configValidation.errors.join(', ')}`, 400);
     }
     
-    return request<AlgorithmStep[]>(`/algorithms/${id}/execute`, {
+    return request<AlgorithmStep[]>(API_CONFIG.ENDPOINTS.EXECUTE_ALGORITHM(id), {
       method: 'POST',
       body: JSON.stringify(config),
     });

@@ -1,18 +1,23 @@
+# Algorithm Visualizer Configuration
+# This file contains the default configuration for the application
+# Environment-specific overrides can be provided via environment variables
+
 server:
-  host: "localhost"
+  host: "0.0.0.0"  # Changed to 0.0.0.0 for Docker/GitHub Pages
   port: 8080
   read_timeout: 30
   write_timeout: 30
 
 logging:
-  level: "info"
-  format: "json"
+  level: "info"  # debug, info, warn, error, fatal
+  format: "text" # text, json
 
 cors:
   allowed_origins:
-    - "http://localhost:5173"
-    - "http://localhost:3000"
-    - "http://localhost:4173"
+    - "http://localhost:5173"  # Vite dev server
+    - "http://localhost:3000"  # Alternative dev server
+    - "http://127.0.0.1:5173"
+    - "http://127.0.0.1:3000"
   allowed_methods:
     - "GET"
     - "POST"
@@ -24,11 +29,12 @@ cors:
     - "Content-Type"
     - "Accept"
     - "Authorization"
+    - "X-Requested-With"
 
 algorithms:
-  max_array_size: 100
+  max_array_size: 1000
   default_array_size: 20
-  min_array_size: 5
+  min_array_size: 1
   max_speed: 10
   min_speed: 1
   default_speed: 5

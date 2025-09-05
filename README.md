@@ -1,177 +1,45 @@
-# 🎯 Algorithm Visualizer
+# Algorithm Visualizer
 
-A professional, interactive algorithm visualization web application designed to demonstrate full-stack development skills and provide an educational tool for understanding sorting algorithms.
-
-![Algorithm Visualizer](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
-![Go](https://img.shields.io/badge/Go-1.21+-blue)
-![Svelte](https://img.shields.io/badge/Svelte-5-orange)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)
-
-## ✨ Features
-
-### 🎨 **Interactive Visualization**
-- Real-time algorithm execution with step-by-step visualization
-- Interactive grid-based data representation
-- Smooth animations and visual feedback
-- Customizable array sizes and execution speeds
-
-### 🔧 **Algorithm Support**
-- **Bubble Sort** - O(n²) time complexity
-- **Selection Sort** - O(n²) time complexity  
-- **Insertion Sort** - O(n²) time complexity
-- **Merge Sort** - O(n log n) time complexity
-- **Quick Sort** - O(n log n) average, O(n²) worst case
-
-### 🎛️ **User Experience**
-- Light/Dark theme with smooth transitions
-- Responsive design for all screen sizes
-- Real-time notifications and status updates
-- Intuitive control panel with play/pause/scrub controls
-- Collapsible side panel with algorithm selection
-- Fuzzy search for algorithm discovery
-
-### 🏗️ **Technical Excellence**
-- Clean, modular architecture
-- Comprehensive error handling
-- Type-safe TypeScript throughout
-- Modern Go best practices
-- RESTful API design
-- Context-aware cancellation
-- Memory-efficient implementations
+A modern, interactive web application for visualizing sorting algorithms with real-time step-by-step animations.
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Go 1.21 or later
-- Node.js 18+ or Bun
-- Modern web browser
+### Development
 
-### Development Setup
+```bash
+# Start backend server
+./dev.sh backend
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd algorthmia
-   ```
+# Start frontend development server (in another terminal)
+./dev.sh frontend
 
-2. **Start the backend**
-   ```bash
-   cd backend
-   go mod download
-   go run cmd/server/main.go
-   ```
+# Or run both with Docker
+./dev.sh run
+```
 
-3. **Start the frontend** (in a new terminal)
-   ```bash
-   cd frontend
-   bun install  # or npm install
-   bun run dev  # or npm run dev
-   ```
-
-4. **Open your browser**
-   Navigate to `http://localhost:5173`
-
-### Production Build
+### Building
 
 ```bash
 # Build everything
-./scripts/build.sh
+./dev.sh build
 
-# Start production server
-cd build
-./start.sh
+# Build Docker image
+./dev.sh docker
 ```
 
-## 🏛️ Architecture
-
-### Backend (Go)
-```
-backend/
-├── cmd/server/          # Application entry point
-├── internal/
-│   ├── api/            # HTTP handlers and routes
-│   ├── algorithm/      # Algorithm engine and implementations
-│   ├── config/         # Configuration management
-│   ├── models/         # Data models and types
-│   └── server/         # Server setup and middleware
-├── pkg/                # Shared utilities
-└── config.yaml         # Configuration file
-```
-
-### Frontend (Svelte + TypeScript)
-```
-frontend/
-├── src/
-│   ├── lib/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── stores/         # State management
-│   │   ├── types.ts        # TypeScript definitions
-│   │   └── api.ts          # API client
-│   └── routes/             # Application pages
-├── static/                 # Static assets
-└── tailwind.config.js      # Styling configuration
-```
-
-## 🔌 API Reference
-
-### Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/health` | Health check |
-| `GET` | `/api/v1/algorithms` | List all algorithms |
-| `GET` | `/api/v1/algorithms/type/{type}` | Get algorithms by type |
-| `GET` | `/api/v1/algorithms/{id}` | Get specific algorithm |
-| `GET` | `/api/v1/algorithms/{id}/config` | Get algorithm configuration |
-| `POST` | `/api/v1/algorithms/{id}/execute` | Execute algorithm |
-
-### Example API Usage
+### Testing
 
 ```bash
-# Get all algorithms
-curl http://localhost:8080/api/v1/algorithms
-
-# Execute bubble sort
-curl -X POST http://localhost:8080/api/v1/algorithms/bubble_sort/execute \
-  -H "Content-Type: application/json" \
-  -d '{"array_size": 10, "speed": 5}'
-```
-
-## 🎨 UI Components
-
-### Core Components
-- **Header** - App title, algorithm info, theme toggle
-- **Visualizer** - Interactive algorithm visualization grid
-- **ControlPanel** - Play/pause/scrub controls and speed adjustment
-- **SidePanel** - Algorithm selection and configuration
-- **NotificationContainer** - Toast notifications and status updates
-
-### Design System
-- **Color Palette** - Primary, secondary, accent, success, warning, error
-- **Typography** - Inter (UI), JetBrains Mono (code)
-- **Animations** - Smooth transitions and micro-interactions
-- **Responsive** - Mobile-first design approach
-
-## 🧪 Testing
-
-### Backend Testing
-```bash
-cd backend
-go test ./...
-go test -v ./internal/algorithm/...
-```
-
-### Frontend Testing
-```bash
-cd frontend
-bun test  # or npm test
+# Run all tests
+./dev.sh test
 ```
 
 ## 🐳 Docker Deployment
 
+The application is containerized using Alpine Linux for minimal size and security.
+
 ```bash
 # Build and run with Docker Compose
-cd build
 docker-compose up --build
 
 # Or build Docker image manually
@@ -179,108 +47,141 @@ docker build -t algorthmia .
 docker run -p 8080:8080 algorthmia
 ```
 
-## 📊 Performance
+## 🌐 GitHub Pages Deployment
 
-- **Backend**: Sub-millisecond algorithm step generation
-- **Frontend**: 60fps smooth animations
-- **Memory**: Efficient step-by-step execution without storing all data
-- **Bundle Size**: Optimized with tree-shaking and code splitting
+The application automatically deploys to GitHub Pages when you push to the `main` branch.
+
+1. Enable GitHub Pages in your repository settings
+2. Set source to "GitHub Actions"
+3. Push to `main` branch
+4. The workflow will build and deploy automatically
+
+## 🏗️ Architecture
+
+### Backend (Go)
+- **Framework:** Gin HTTP framework
+- **Algorithms:** Sorting algorithms with step-by-step execution
+- **API:** RESTful API with CORS support
+- **Security:** Input validation, rate limiting, security headers
+
+### Frontend (Svelte)
+- **Framework:** Svelte 5 with TypeScript
+- **Styling:** Tailwind CSS
+- **Build:** Vite
+- **Testing:** Vitest
+
+### Features
+- **Real-time Visualization:** Step-by-step algorithm execution
+- **Interactive Controls:** Play, pause, stop, speed control
+- **Multiple Algorithms:** Bubble Sort, Selection Sort, Insertion Sort, Merge Sort, Quick Sort
+- **Responsive Design:** Works on desktop and mobile
+- **Dark/Light Theme:** User preference support
+- **Accessibility:** WCAG compliant
+
+## 📁 Project Structure
+
+```
+├── backend/                 # Go backend
+│   ├── cmd/server/         # Main application
+│   ├── internal/           # Internal packages
+│   │   ├── algorithm/      # Algorithm implementations
+│   │   ├── api/           # HTTP handlers
+│   │   ├── config/        # Configuration
+│   │   ├── middleware/    # HTTP middleware
+│   │   └── models/        # Data models
+│   └── config.yaml        # Configuration file
+├── frontend/               # Svelte frontend
+│   ├── src/               # Source code
+│   │   ├── lib/           # Libraries and utilities
+│   │   ├── routes/        # SvelteKit routes
+│   │   └── test/          # Test utilities
+│   └── package.json       # Dependencies
+├── .github/workflows/     # GitHub Actions
+├── Dockerfile             # Docker configuration
+├── docker-compose.yml     # Docker Compose
+└── dev.sh                 # Development script
+```
+
+## 🛠️ Development
+
+### Prerequisites
+- **Go 1.21+** for backend development
+- **Node.js 18+** or **Bun** for frontend development
+- **Docker** for containerized deployment
+
+### Available Scripts
+
+```bash
+./dev.sh backend     # Start backend server
+./dev.sh frontend    # Start frontend dev server
+./dev.sh build       # Build both frontend and backend
+./dev.sh test        # Run all tests
+./dev.sh docker      # Build Docker image
+./dev.sh run         # Run with Docker Compose
+./dev.sh clean       # Clean build artifacts
+./dev.sh help        # Show help
+```
+
+### API Endpoints
+
+- `GET /api/v1/health` - Health check
+- `GET /api/v1/algorithms` - List all algorithms
+- `GET /api/v1/algorithms/:id` - Get specific algorithm
+- `GET /api/v1/algorithms/:id/config` - Get algorithm configuration
+- `POST /api/v1/algorithms/:id/execute` - Execute algorithm
+
+## 🎯 Algorithms
+
+### Sorting Algorithms
+- **Bubble Sort** - Simple comparison-based sorting
+- **Selection Sort** - Finds minimum element and places it
+- **Insertion Sort** - Builds sorted array one element at a time
+- **Merge Sort** - Divide and conquer approach
+- **Quick Sort** - Partition-based sorting
+
+Each algorithm includes:
+- Step-by-step visualization
+- Time and space complexity information
+- Interactive controls
+- Educational descriptions
 
 ## 🔧 Configuration
 
-### Backend Configuration (`config.yaml`)
+The application can be configured via `backend/config.yaml`:
+
 ```yaml
 server:
-  host: "localhost"
+  host: "0.0.0.0"
   port: 8080
   read_timeout: 30
   write_timeout: 30
 
+logging:
+  level: "info"
+  format: "text"
+
+cors:
+  allowed_origins: ["*"]
+  allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allowed_headers: ["Origin", "Content-Type", "Accept", "Authorization"]
+
 algorithms:
-  max_array_size: 100
+  max_array_size: 1000
   default_array_size: 20
-  min_array_size: 5
+  min_array_size: 1
   max_speed: 10
   min_speed: 1
   default_speed: 5
 ```
 
-### Environment Variables
-- `SERVER_HOST` - Server host address
-- `SERVER_PORT` - Server port
-- `LOG_LEVEL` - Logging level (debug, info, warn, error)
+## 📝 License
 
-## 🛠️ Development
-
-### Adding New Algorithms
-
-1. **Create algorithm implementation**
-   ```go
-   // internal/algorithm/sorting/new_algorithm.go
-   type NewAlgorithm struct {
-       metadata models.Algorithm
-   }
-   
-   func (na *NewAlgorithm) Execute(ctx context.Context, config models.AlgorithmConfig) ([]models.AlgorithmStep, error) {
-       // Implementation
-   }
-   ```
-
-2. **Register in server**
-   ```go
-   // internal/server/server.go
-   newAlg := sorting.NewNewAlgorithm()
-   algorithmManager.RegisterAlgorithm(newAlg)
-   ```
-
-### Adding New UI Components
-
-1. **Create component**
-   ```svelte
-   <!-- src/lib/components/NewComponent.svelte -->
-   <script lang="ts">
-     // Component logic
-   </script>
-   
-   <div class="new-component">
-     <!-- Component markup -->
-   </div>
-   ```
-
-2. **Add to component library**
-   ```typescript
-   // src/lib/components/index.ts
-   export { default as NewComponent } from './NewComponent.svelte';
-   ```
-
-## 📈 Roadmap
-
-- [ ] Additional sorting algorithms (Heap Sort, Radix Sort)
-- [ ] Graph algorithms (BFS, DFS, Dijkstra)
-- [ ] Search algorithms (Binary Search, Linear Search)
-- [ ] Algorithm comparison mode
-- [ ] Export visualization as GIF/MP4
-- [ ] User accounts and saved visualizations
-- [ ] Mobile app (React Native/Flutter)
+This project is open source and available under the [MIT License](LICENSE).
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## 📞 Support
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Inspired by [VisuAlgo](https://visualgo.net/) and [Brilliant.org](https://brilliant.org/)
-- Built with modern web technologies and best practices
-- Designed for educational purposes and technical demonstrations
-
----
-
-**Built with ❤️ for the developer community**
+If you have any questions or issues, please open an issue on GitHub.

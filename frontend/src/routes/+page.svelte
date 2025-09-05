@@ -16,7 +16,9 @@
 		setAlgorithms,
 		setLoading,
 		setError,
-		addNotification
+		addNotification,
+		showError,
+		showInfo
 	} from '$lib/stores/app';
 	import { api, APIError } from '$lib/api';
 
@@ -38,12 +40,11 @@
 		} catch (err) {
 			const errorMessage = err instanceof APIError ? err.message : 'Failed to load algorithms';
 			setError(errorMessage);
-			addNotification({
-				type: 'error',
-				title: 'Error',
-				message: errorMessage,
-				duration: 5000,
-			});
+			showError(
+				'Loading Failed',
+				errorMessage,
+				5000
+			);
 		} finally {
 			setLoading(false);
 		}

@@ -85,9 +85,12 @@ func (s *Server) Start() error {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.CSPMiddleware())
+	router.Use(middleware.SanitizeInput())
 	router.Use(middleware.RateLimit())
 	router.Use(middleware.RequestSizeLimit(1024 * 1024)) // 1MB limit
 	router.Use(middleware.Timeout(30 * time.Second))
+	router.Use(middleware.MetricsMiddleware())
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     s.config.CORS.AllowedOrigins,
 		AllowMethods:     s.config.CORS.AllowedMethods,
@@ -98,6 +101,9 @@ func (s *Server) Start() error {
 	// Setup routes
 	handler := api.NewHandler(s.algorithmManager)
 	handler.SetupRoutes(router)
+
+	// Add metrics endpoint
+	router.GET("/metrics", middleware.GetMetricsHandler())
 
 	// Serve static files (for frontend)
 	router.Static("/static", "./frontend/dist")

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { 
 		selectedAlgorithm, 
 		controlState, 
@@ -9,6 +10,8 @@
 		setSpeed,
 		setGenerating
 	} from '$lib/stores/app';
+	import { handleArrowKeys, announceToScreenReader } from '$lib/utils/accessibility';
+	import { throttle } from '$lib/utils/performance';
 
 	let isDragging = $state(false);
 	let generateLoading = $state(false);
@@ -70,23 +73,56 @@
 			setCurrentStep(0);
 			pause();
 			resetLoading = false;
+			announceToScreenReader('Algorithm reset');
 		}, 300);
 	}
 
 	function playPause() {
 		if ($controlState.isPlaying) {
 			pause();
+			announceToScreenReader('Algorithm paused');
 		} else {
 			play();
+			announceToScreenReader('Algorithm playing');
 		}
 	}
+
+	// Throttled seek function to prevent excessive updates
+	const throttledSeek = throttle((step: number) => {
+		setCurrentStep(step);
+		pause();
+		announceToScreenReader(`Step ${step + 1} of ${$controlState.totalSteps}`);
+	}, 100);
 
 	function seekToStep(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const step = parseInt(target.value);
-		setCurrentStep(step);
-		pause();
+		throttledSeek(step);
 	}
+
+	onMount(() => {
+		// Set up keyboard navigation for the scrubber
+		const scrubberElement = document.querySelector('.scrubber-container') as HTMLElement;
+		if (scrubberElement) {
+			const cleanup = handleArrowKeys(
+				scrubberElement,
+				undefined, // up
+				undefined, // down
+				() => { // left
+					const newStep = Math.max(0, $controlState.currentStep - 1);
+					setCurrentStep(newStep);
+					announceToScreenReader(`Step ${newStep + 1} of ${$controlState.totalSteps}`);
+				},
+				() => { // right
+					const newStep = Math.min($controlState.totalSteps - 1, $controlState.currentStep + 1);
+					setCurrentStep(newStep);
+					announceToScreenReader(`Step ${newStep + 1} of ${$controlState.totalSteps}`);
+				}
+			);
+			
+			return cleanup;
+		}
+	});
 
 	// Mouse event handlers for scrubber
 	function handleMouseMove(event: MouseEvent) {
@@ -124,12 +160,13 @@
 	let hasSteps = $derived($execution && $execution.steps.length > 0);
 </script>
 
-<div class="video-player-controls text-white px-4 py-3 flex items-center space-x-4">
+<div class="video-player-controls text-white px-4 py-3 flex items-center space-x-4 scrubber-container" role="toolbar" aria-label="Algorithm controls">
 	<!-- Generate Data Button -->
 	<button
 		onclick={generateData}
 		disabled={generateLoading || !$selectedAlgorithm}
 		class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap {(generateLoading || !$selectedAlgorithm) ? 'opacity-50 cursor-not-allowed' : ''}"
+		aria-label="Generate algorithm data"
 	>
 		{#if generateLoading}
 			<div class="spinner w-4 h-4 mr-2"></div>
@@ -147,6 +184,7 @@
 		disabled={!$selectedAlgorithm || !hasSteps}
 		class="bg-white text-slate-900 hover:bg-slate-100 disabled:bg-slate-400 p-2 rounded-lg transition-colors {(!$selectedAlgorithm || !hasSteps) ? 'opacity-50 cursor-not-allowed' : ''}"
 		title={!$selectedAlgorithm ? 'Select an algorithm first' : !hasSteps ? 'Generate data first' : $controlState.isPlaying ? 'Pause' : 'Play'}
+		aria-label={$controlState.isPlaying ? 'Pause algorithm' : 'Play algorithm'}
 	>
 		{#if $controlState.isPlaying}
 			<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

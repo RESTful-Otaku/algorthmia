@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
+	"time"
 
 	"algorthmia/backend/internal/algorithm"
+	"algorthmia/backend/internal/middleware"
 	"algorthmia/backend/internal/models"
 
 	"github.com/gin-gonic/gin"
@@ -126,12 +129,29 @@ func (h *Handler) ExecuteAlgorithm(c *gin.Context) {
 		config.Speed = 5
 	}
 
+	startTime := time.Now()
 	steps, err := h.algorithmManager.ExecuteAlgorithm(c.Request.Context(), algorithmID, config)
+	duration := time.Since(startTime)
+
+	// Track metrics
+	success := err == nil
+	middleware.TrackAlgorithmExecution(algorithmID, duration, len(steps), success)
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.APIResponse{
-			Success: false,
-			Error:   err.Error(),
-		})
+		middleware.TrackError("algorithm_execution", "api")
+
+		// Check if it's a "not found" error
+		if strings.Contains(err.Error(), "not found") {
+			c.JSON(http.StatusNotFound, models.APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, models.APIResponse{
+				Success: false,
+				Error:   err.Error(),
+			})
+		}
 		return
 	}
 

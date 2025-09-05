@@ -228,6 +228,42 @@ export const setError = (errorMessage: string | null) => {
   error.set(errorMessage);
 };
 
+export const showError = (title: string, message: string, duration: number = 5000) => {
+  addNotification({
+    type: 'error',
+    title,
+    message,
+    duration
+  });
+};
+
+export const showSuccess = (title: string, message: string, duration: number = 3000) => {
+  addNotification({
+    type: 'success',
+    title,
+    message,
+    duration
+  });
+};
+
+export const showWarning = (title: string, message: string, duration: number = 4000) => {
+  addNotification({
+    type: 'warning',
+    title,
+    message,
+    duration
+  });
+};
+
+export const showInfo = (title: string, message: string, duration: number = 3000) => {
+  addNotification({
+    type: 'info',
+    title,
+    message,
+    duration
+  });
+};
+
 // Execution actions
 export const setExecution = (newExecution: AlgorithmExecution | null) => {
   execution.set(newExecution);

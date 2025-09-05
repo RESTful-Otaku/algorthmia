@@ -228,7 +228,7 @@ func (is *InsertionSort) Execute(ctx context.Context, config models.AlgorithmCon
 		stepNumber++
 	}
 
-	// Add final step
+	// Add final step with verification
 	steps = append(steps, models.AlgorithmStep{
 		StepNumber: stepNumber,
 		Action:     "complete",
@@ -237,6 +237,7 @@ func (is *InsertionSort) Execute(ctx context.Context, config models.AlgorithmCon
 		Metadata: map[string]interface{}{
 			"description": "Insertion sort completed",
 			"total_steps": stepNumber + 1,
+			"is_sorted":   isSorted(arr),
 		},
 		Timestamp: time.Now(),
 	})

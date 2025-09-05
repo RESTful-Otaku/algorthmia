@@ -7,9 +7,14 @@
 		execution,
 		error,
 		setGenerating,
-		setError
+		setError,
+		showError,
+		showSuccess,
+		showInfo
 	} from '$lib/stores/app';
 	import { api } from '$lib/api';
+	import { trackAlgorithmExecution, trackUserInteraction } from '$lib/utils/analytics';
+	import { debounce, throttle } from '$lib/utils/performance';
 
 	let container: HTMLDivElement;
 	let isInitialized = $state(false);
@@ -114,6 +119,7 @@
 	async function generateData() {
 		if (!$selectedAlgorithm) return;
 
+		const startTime = performance.now();
 		try {
 			setGenerating(true);
 			setError(null);
@@ -141,13 +147,31 @@
 			totalSteps = steps.length;
 			currentStep = 0;
 			
+			// Track performance metrics
+			const duration = performance.now() - startTime;
+			trackAlgorithmExecution($selectedAlgorithm.id, duration, steps.length);
+			trackUserInteraction('data_generated', 'GridAlgorithmVisualizer');
+			
+			// Show success notification
+			showSuccess(
+				'Data Generated',
+				`Successfully generated ${steps.length} steps for ${$selectedAlgorithm.name}`,
+				3000
+			);
+			
 			// Render first step
 			if (steps.length > 0) {
 				renderStep(steps[0], 0);
 			}
 		} catch (error) {
 			console.error('Error generating data:', error);
-			setError(error instanceof Error ? error.message : 'Unknown error');
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			setError(errorMessage);
+			showError(
+				'Generation Failed',
+				`Failed to generate data: ${errorMessage}`,
+				5000
+			);
 		} finally {
 			setGenerating(false);
 		}
@@ -260,7 +284,8 @@
 		container.appendChild(gridElement);
 	}
 
-	function renderStep(step: any, stepIndex: number) {
+	// Debounced render function to prevent excessive re-renders
+	const debouncedRenderStep = debounce((step: any, stepIndex: number) => {
 		if (!container || !step) return;
 		
 		// Update step info
@@ -272,6 +297,10 @@
 		if (step.data && Array.isArray(step.data)) {
 			renderArrayStep(step, stepIndex);
 		}
+	}, 16); // ~60fps
+
+	function renderStep(step: any, stepIndex: number) {
+		debouncedRenderStep(step, stepIndex);
 	}
 
 	function renderArrayStep(step: any, stepIndex: number) {

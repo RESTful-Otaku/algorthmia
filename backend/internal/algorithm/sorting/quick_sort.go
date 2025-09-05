@@ -67,7 +67,7 @@ func (qs *QuickSort) Execute(ctx context.Context, config models.AlgorithmConfig)
 	// Execute quick sort
 	steps = qs.quickSort(ctx, arr, 0, len(arr)-1, steps, &stepNumber)
 
-	// Add final step
+	// Add final step with verification
 	steps = append(steps, models.AlgorithmStep{
 		StepNumber: stepNumber,
 		Action:     "complete",
@@ -76,6 +76,7 @@ func (qs *QuickSort) Execute(ctx context.Context, config models.AlgorithmConfig)
 		Metadata: map[string]interface{}{
 			"description": "Quick sort completed",
 			"total_steps": stepNumber + 1,
+			"is_sorted":   isSorted(arr),
 		},
 		Timestamp: time.Now(),
 	})
@@ -181,9 +182,9 @@ func (qs *QuickSort) partition(ctx context.Context, arr []int, low, high int, st
 			Data:       make([]int, len(arr)),
 			Highlights: []int{j, high},
 			Metadata: map[string]interface{}{
-				"description": fmt.Sprintf("Comparing %d with pivot %d", arr[j], pivot),
-				"element":     j,
-				"pivot":       high,
+				"description":   fmt.Sprintf("Comparing %d with pivot %d", arr[j], pivot),
+				"element":       j,
+				"pivot":         high,
 				"element_value": arr[j],
 				"pivot_value":   pivot,
 			},

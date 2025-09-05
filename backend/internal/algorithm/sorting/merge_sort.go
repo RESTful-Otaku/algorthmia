@@ -67,7 +67,7 @@ func (ms *MergeSort) Execute(ctx context.Context, config models.AlgorithmConfig)
 	// Execute merge sort
 	steps = ms.mergeSort(ctx, arr, 0, len(arr)-1, steps, &stepNumber)
 
-	// Add final step
+	// Add final step with verification
 	steps = append(steps, models.AlgorithmStep{
 		StepNumber: stepNumber,
 		Action:     "complete",
@@ -76,6 +76,7 @@ func (ms *MergeSort) Execute(ctx context.Context, config models.AlgorithmConfig)
 		Metadata: map[string]interface{}{
 			"description": "Merge sort completed",
 			"total_steps": stepNumber + 1,
+			"is_sorted":   isSorted(arr),
 		},
 		Timestamp: time.Now(),
 	})

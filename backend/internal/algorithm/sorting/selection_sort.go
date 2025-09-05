@@ -107,10 +107,10 @@ func (ss *SelectionSort) Execute(ctx context.Context, config models.AlgorithmCon
 				Data:       make([]int, len(arr)),
 				Highlights: []int{minIdx, j},
 				Metadata: map[string]interface{}{
-					"description": fmt.Sprintf("Comparing %d with current minimum %d", arr[j], arr[minIdx]),
-					"current_min": minIdx,
-					"comparing":   j,
-					"min_value":   arr[minIdx],
+					"description":   fmt.Sprintf("Comparing %d with current minimum %d", arr[j], arr[minIdx]),
+					"current_min":   minIdx,
+					"comparing":     j,
+					"min_value":     arr[minIdx],
 					"compare_value": arr[j],
 				},
 				Timestamp: time.Now(),
@@ -228,7 +228,7 @@ func (ss *SelectionSort) Execute(ctx context.Context, config models.AlgorithmCon
 		stepNumber++
 	}
 
-	// Add final step
+	// Add final step with verification
 	steps = append(steps, models.AlgorithmStep{
 		StepNumber: stepNumber,
 		Action:     "complete",
@@ -237,6 +237,7 @@ func (ss *SelectionSort) Execute(ctx context.Context, config models.AlgorithmCon
 		Metadata: map[string]interface{}{
 			"description": "Selection sort completed",
 			"total_steps": stepNumber + 1,
+			"is_sorted":   isSorted(arr),
 		},
 		Timestamp: time.Now(),
 	})

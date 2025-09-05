@@ -1,202 +1,263 @@
-// Input validation and sanitization utilities
+// Centralized validation utilities
+
+export interface ValidationRule<T = any> {
+	validate: (value: T) => boolean;
+	message: string;
+}
 
 export interface ValidationResult {
 	isValid: boolean;
 	errors: string[];
 }
 
-export interface ValidationRule {
-	required?: boolean;
-	minLength?: number;
-	maxLength?: number;
-	pattern?: RegExp;
-	custom?: (value: any) => string | null;
-}
+// Common validation rules
+export const validationRules = {
+	required: <T>(message = 'This field is required'): ValidationRule<T> => ({
+		validate: (value: T) => {
+			if (value === null || value === undefined) return false;
+			if (typeof value === 'string') return value.trim().length > 0;
+			if (Array.isArray(value)) return value.length > 0;
+			return true;
+		},
+		message
+	}),
 
-// Sanitize string input
-export function sanitizeString(input: string): string {
-	if (typeof input !== 'string') {
-		return '';
-	}
-	
-	// Remove potentially dangerous characters
-	return input
-		.replace(/[<>]/g, '') // Remove < and >
-		.replace(/javascript:/gi, '') // Remove javascript: protocol
-		.replace(/on\w+=/gi, '') // Remove event handlers
-		.trim();
-}
+	minLength: (min: number, message?: string): ValidationRule<string> => ({
+		validate: (value: string) => value.length >= min,
+		message: message || `Must be at least ${min} characters long`
+	}),
 
-// Validate string input
-export function validateString(value: string, rules: ValidationRule = {}): ValidationResult {
-	const errors: string[] = [];
-	
-	if (rules.required && (!value || value.trim().length === 0)) {
-		errors.push('This field is required');
-		return { isValid: false, errors };
+	maxLength: (max: number, message?: string): ValidationRule<string> => ({
+		validate: (value: string) => value.length <= max,
+		message: message || `Must be no more than ${max} characters long`
+	}),
+
+	min: (min: number, message?: string): ValidationRule<number> => ({
+		validate: (value: number) => value >= min,
+		message: message || `Must be at least ${min}`
+	}),
+
+	max: (max: number, message?: string): ValidationRule<number> => ({
+		validate: (value: number) => value <= max,
+		message: message || `Must be no more than ${max}`
+	}),
+
+	email: (message = 'Please enter a valid email address'): ValidationRule<string> => ({
+		validate: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+		message
+	}),
+
+	url: (message = 'Please enter a valid URL'): ValidationRule<string> => ({
+		validate: (value: string) => /^https?:\/\/.+/.test(value),
+		message
+	}),
+
+	alphanumeric: (message = 'Must contain only letters and numbers'): ValidationRule<string> => ({
+		validate: (value: string) => /^[a-zA-Z0-9]+$/.test(value),
+		message
+	}),
+
+	numeric: (message = 'Must contain only numbers'): ValidationRule<string> => ({
+		validate: (value: string) => /^\d+$/.test(value),
+		message
+	}),
+
+	pattern: (regex: RegExp, message: string): ValidationRule<string> => ({
+		validate: (value: string) => regex.test(value),
+		message
+	}),
+
+	arraySize: (min: number, max: number, message?: string): ValidationRule<any[]> => ({
+		validate: (value: any[]) => value.length >= min && value.length <= max,
+		message: message || `Must contain between ${min} and ${max} items`
+	})
+};
+
+// Validator class
+export class Validator<T = any> {
+	private rules: ValidationRule<T>[] = [];
+
+	constructor(rules: ValidationRule<T>[] = []) {
+		this.rules = rules;
 	}
-	
-	if (value && rules.minLength && value.length < rules.minLength) {
-		errors.push(`Minimum length is ${rules.minLength} characters`);
+
+	// Add a validation rule
+	addRule(rule: ValidationRule<T>): Validator<T> {
+		this.rules.push(rule);
+		return this;
 	}
-	
-	if (value && rules.maxLength && value.length > rules.maxLength) {
-		errors.push(`Maximum length is ${rules.maxLength} characters`);
-	}
-	
-	if (value && rules.pattern && !rules.pattern.test(value)) {
-		errors.push('Invalid format');
-	}
-	
-	if (value && rules.custom) {
-		const customError = rules.custom(value);
-		if (customError) {
-			errors.push(customError);
+
+	// Validate a value against all rules
+	validate(value: T): ValidationResult {
+		const errors: string[] = [];
+
+		for (const rule of this.rules) {
+			if (!rule.validate(value)) {
+				errors.push(rule.message);
+			}
 		}
-	}
-	
-	return {
-		isValid: errors.length === 0,
-		errors
-	};
-}
 
-// Validate number input
-export function validateNumber(value: number, rules: { min?: number; max?: number; required?: boolean } = {}): ValidationResult {
-	const errors: string[] = [];
-	
-	if (rules.required && (value === null || value === undefined || isNaN(value))) {
-		errors.push('This field is required');
-		return { isValid: false, errors };
+		return {
+			isValid: errors.length === 0,
+			errors
+		};
 	}
-	
-	if (!isNaN(value)) {
-		if (rules.min !== undefined && value < rules.min) {
-			errors.push(`Minimum value is ${rules.min}`);
+
+	// Validate multiple values
+	validateMultiple(values: Record<string, T>): Record<string, ValidationResult> {
+		const results: Record<string, ValidationResult> = {};
+
+		for (const [key, value] of Object.entries(values)) {
+			results[key] = this.validate(value);
 		}
-		
-		if (rules.max !== undefined && value > rules.max) {
-			errors.push(`Maximum value is ${rules.max}`);
-		}
+
+		return results;
 	}
-	
-	return {
-		isValid: errors.length === 0,
-		errors
-	};
 }
 
-// Validate array size
-export function validateArraySize(size: number): ValidationResult {
-	return validateNumber(size, {
-		required: true,
-		min: 1,
-		max: 1000
-	});
+// Convenience functions for common validations
+export const validate = {
+	// String validations
+	string: (value: string, rules: ValidationRule<string>[] = []): ValidationResult => {
+		const validator = new Validator(rules);
+		return validator.validate(value);
+	},
+
+	// Number validations
+	number: (value: number, rules: ValidationRule<number>[] = []): ValidationResult => {
+		const validator = new Validator(rules);
+		return validator.validate(value);
+	},
+
+	// Array validations
+	array: (value: any[], rules: ValidationRule<any[]>[] = []): ValidationResult => {
+		const validator = new Validator(rules);
+		return validator.validate(value);
+	},
+
+	// Email validation
+	email: (value: string): ValidationResult => {
+		return validate.string(value, [validationRules.email()]);
+	},
+
+	// URL validation
+	url: (value: string): ValidationResult => {
+		return validate.string(value, [validationRules.url()]);
+	},
+
+	// Required field validation
+	required: <T>(value: T): ValidationResult => {
+		const validator = new Validator([validationRules.required()]);
+		return validator.validate(value);
+	}
+};
+
+// Form validation helper
+export class FormValidator {
+	private validators: Record<string, Validator> = {};
+
+	// Add a field validator
+	addField(fieldName: string, validator: Validator): FormValidator {
+		this.validators[fieldName] = validator;
+		return this;
+	}
+
+	// Validate all fields
+	validateForm(data: Record<string, any>): {
+		isValid: boolean;
+		errors: Record<string, string[]>;
+		fieldErrors: Record<string, ValidationResult>;
+	} {
+		const errors: Record<string, string[]> = {};
+		const fieldErrors: Record<string, ValidationResult> = {};
+		let isValid = true;
+
+		for (const [fieldName, validator] of Object.entries(this.validators)) {
+			const value = data[fieldName];
+			const result = validator.validate(value);
+			
+			fieldErrors[fieldName] = result;
+			
+			if (!result.isValid) {
+				errors[fieldName] = result.errors;
+				isValid = false;
+			}
+		}
+
+		return {
+			isValid,
+			errors,
+			fieldErrors
+		};
+	}
+
+	// Validate a single field
+	validateField(fieldName: string, value: any): ValidationResult {
+		const validator = this.validators[fieldName];
+		if (!validator) {
+			return { isValid: true, errors: [] };
+		}
+		return validator.validate(value);
+	}
 }
 
-// Validate algorithm ID
+// Algorithm-specific validations
+export const algorithmValidations = {
+	arraySize: (size: number): ValidationResult => {
+		return validate.number(size, [
+			validationRules.min(1, 'Array size must be at least 1'),
+			validationRules.max(1000, 'Array size cannot exceed 1000')
+		]);
+	},
+
+	speed: (speed: number): ValidationResult => {
+		return validate.number(speed, [
+			validationRules.min(1, 'Speed must be at least 1'),
+			validationRules.max(10, 'Speed cannot exceed 10')
+		]);
+	},
+
+	algorithmId: (id: string): ValidationResult => {
+		return validate.string(id, [
+			validationRules.required('Algorithm ID is required'),
+			validationRules.pattern(/^[a-zA-Z0-9_-]+$/, 'Algorithm ID must contain only letters, numbers, underscores, and hyphens')
+		]);
+	}
+};
+
+// Specific validation functions for API
 export function validateAlgorithmId(id: string): ValidationResult {
-	return validateString(id, {
-		required: true,
-		minLength: 1,
-		maxLength: 50,
-		pattern: /^[a-zA-Z0-9_-]+$/
-	});
+	return algorithmValidations.algorithmId(id);
 }
 
-// Validate search query
-export function validateSearchQuery(query: string): ValidationResult {
-	return validateString(query, {
-		maxLength: 100,
-		pattern: /^[a-zA-Z0-9\s_-]*$/
-	});
-}
-
-// Sanitize HTML content
-export function sanitizeHtml(html: string): string {
-	if (typeof html !== 'string') {
-		return '';
-	}
-	
-	// Basic HTML sanitization - in production, use a proper library like DOMPurify
-	return html
-		.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-		.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-		.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
-}
-
-// Validate email
-export function validateEmail(email: string): ValidationResult {
-	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	return validateString(email, {
-		required: true,
-		pattern: emailPattern
-	});
-}
-
-// Validate URL
-export function validateUrl(url: string): ValidationResult {
-	try {
-		new URL(url);
-		return { isValid: true, errors: [] };
-	} catch {
-		return { isValid: false, errors: ['Invalid URL format'] };
-	}
-}
-
-// Sanitize object properties
-export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-	const sanitized = { ...obj };
-	
-	for (const key in sanitized) {
-		if (typeof sanitized[key] === 'string') {
-			sanitized[key] = sanitizeString(sanitized[key]) as T[Extract<keyof T, string>];
-		} else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-			sanitized[key] = sanitizeObject(sanitized[key]) as T[Extract<keyof T, string>];
-		}
-	}
-	
-	return sanitized;
-}
-
-// Validate algorithm configuration
 export function validateAlgorithmConfig(config: any): ValidationResult {
 	const errors: string[] = [];
 	
-	if (!config || typeof config !== 'object') {
-		errors.push('Configuration must be an object');
-		return { isValid: false, errors };
-	}
-	
 	// Validate array size
-	if (config.arraySize !== undefined) {
-		const arraySizeResult = validateArraySize(config.arraySize);
-		if (!arraySizeResult.isValid) {
-			errors.push(...arraySizeResult.errors);
-		}
+	const arraySizeResult = algorithmValidations.arraySize(config.array_size);
+	if (!arraySizeResult.isValid) {
+		errors.push(...arraySizeResult.errors);
 	}
 	
 	// Validate speed
-	if (config.speed !== undefined) {
-		const speedResult = validateNumber(config.speed, { min: 1, max: 10 });
-		if (!speedResult.isValid) {
-			errors.push(...speedResult.errors);
-		}
+	const speedResult = algorithmValidations.speed(config.speed);
+	if (!speedResult.isValid) {
+		errors.push(...speedResult.errors);
 	}
 	
-	// Validate data array
+	// Validate data if provided
 	if (config.data && Array.isArray(config.data)) {
-		if (config.data.length > 1000) {
-			errors.push('Data array too large');
+		if (config.data.length !== config.array_size) {
+			errors.push('Data length must match array size');
 		}
 		
+		// Validate data values
 		for (let i = 0; i < config.data.length; i++) {
 			if (typeof config.data[i] !== 'number' || isNaN(config.data[i])) {
-				errors.push(`Invalid data at index ${i}`);
+				errors.push(`Data value at index ${i} must be a valid number`);
 			}
 			if (config.data[i] < -10000 || config.data[i] > 10000) {
-				errors.push(`Data value at index ${i} is out of range`);
+				errors.push(`Data value at index ${i} is out of range (-10000 to 10000)`);
 			}
 		}
 	}
@@ -206,3 +267,33 @@ export function validateAlgorithmConfig(config: any): ValidationResult {
 		errors
 	};
 }
+
+// Input sanitization
+export const sanitize = {
+	// Remove HTML tags
+	html: (input: string): string => {
+		const div = document.createElement('div');
+		div.textContent = input;
+		return div.innerHTML;
+	},
+
+	// Remove special characters
+	alphanumeric: (input: string): string => {
+		return input.replace(/[^a-zA-Z0-9]/g, '');
+	},
+
+	// Trim whitespace
+	trim: (input: string): string => {
+		return input.trim();
+	},
+
+	// Convert to lowercase
+	lowercase: (input: string): string => {
+		return input.toLowerCase();
+	},
+
+	// Convert to uppercase
+	uppercase: (input: string): string => {
+		return input.toUpperCase();
+	}
+};
