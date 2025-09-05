@@ -149,6 +149,7 @@
 	});
 
 	function handleWelcomeClose() {
+		console.log('Welcome modal closing...');
 		showWelcomeModal = false;
 		if (browser) {
 			localStorage.setItem('hasSeenWelcome', 'true');
@@ -174,9 +175,17 @@
 	}
 
 	function handleModalBackdropClick(e: MouseEvent) {
+		console.log('Modal backdrop clicked', e.target, e.currentTarget);
+		// Only close if clicking directly on the backdrop, not on the modal content
 		if (e.target === e.currentTarget) {
+			console.log('Closing modal due to backdrop click');
 			handleWelcomeClose();
 		}
+	}
+
+	function handleModalContentClick(e: MouseEvent) {
+		// Prevent clicks on modal content from bubbling to backdrop
+		e.stopPropagation();
 	}
 
 	function toggleHints() {
@@ -232,11 +241,8 @@
 		class="intro-modal-backdrop" 
 		onclick={handleModalBackdropClick}
 		onkeydown={(e) => e.key === 'Escape' && handleWelcomeClose()}
-		role="button"
-		tabindex="0"
-		aria-label="Click outside to close modal"
 	>
-		<div class="intro-modal">
+		<div class="intro-modal" onclick={handleModalContentClick}>
 			<!-- Progress Bar -->
 			<div class="intro-progress">
 				<div class="intro-progress-bar">
