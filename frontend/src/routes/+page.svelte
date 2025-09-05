@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import Fuse from 'fuse.js';
 	import Header from '$lib/components/Header.svelte';
 	import GridAlgorithmVisualizer from '$lib/components/GridAlgorithmVisualizer.svelte';
 	import ParameterWidgets from '$lib/components/ParameterWidgets.svelte';
@@ -60,6 +61,7 @@
 	
 	// Search functionality
 	let searchQuery = $state('');
+	let fuse: Fuse<any> | null = null;
 	
 	// Responsive layout states
 	let isLeftPanelOpen = $state(true);
@@ -72,6 +74,10 @@
 			setLoading(true);
 			const fetchedAlgorithms = await api.getAlgorithms();
 			setAlgorithms(fetchedAlgorithms);
+			
+			// Initialize Fuse.js after algorithms are loaded
+			initializeFuse();
+			
 			addNotification({
 				type: 'success',
 				title: 'Welcome!',
@@ -177,40 +183,40 @@
 		showHints = !showHints;
 	}
 
-	// Fuzzy search function
-	function fuzzySearch(query: string, text: string): boolean {
-		if (!query.trim()) return true;
+	// Initialize Fuse.js for fuzzy search
+	function initializeFuse() {
+		if ($algorithms.length === 0) return;
 		
-		const queryLower = query.toLowerCase().trim();
-		const textLower = text.toLowerCase();
+		const options = {
+			keys: [
+				{ name: 'name', weight: 0.7 },
+				{ name: 'type', weight: 0.2 },
+				{ name: 'description', weight: 0.1 }
+			],
+			threshold: 0.3, // Lower = more strict matching
+			includeScore: true,
+			includeMatches: true
+		};
 		
-		// First try exact substring match (most common case)
-		if (textLower.includes(queryLower)) {
-			return true;
-		}
-		
-		// Then try fuzzy matching: check if all characters in query appear in order in text
-		let queryIndex = 0;
-		for (let i = 0; i < textLower.length && queryIndex < queryLower.length; i++) {
-			if (textLower[i] === queryLower[queryIndex]) {
-				queryIndex++;
-			}
-		}
-		
-		return queryIndex === queryLower.length;
+		fuse = new Fuse($algorithms, options);
 	}
 
-	// Filtered algorithms based on search query
+	// Filtered algorithms based on search query using Fuse.js
 	function getFilteredAlgorithms() {
 		if (!searchQuery.trim()) {
 			return $algorithms;
 		}
 		
-		return $algorithms.filter(algorithm => {
-			// Search primarily by name, then by other fields
-			const searchText = `${algorithm.name} ${algorithm.type} ${algorithm.description}`;
-			return fuzzySearch(searchQuery, searchText);
-		});
+		if (!fuse) {
+			initializeFuse();
+		}
+		
+		if (!fuse) {
+			return $algorithms;
+		}
+		
+		const results = fuse.search(searchQuery);
+		return results.map(result => result.item);
 	}
 
 	function clearSearch() {
