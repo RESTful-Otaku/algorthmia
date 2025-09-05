@@ -82,7 +82,7 @@
 				type: 'success',
 				title: 'Welcome!',
 				message: 'Algorithm Visualizer loaded successfully. Select an algorithm to get started.',
-				duration: 3000,
+				duration: 6000,
 			});
 		} catch (err) {
 			const errorMessage = err instanceof APIError ? err.message : 'Failed to load algorithms';
@@ -90,7 +90,7 @@
 			showError(
 				'Loading Failed',
 				errorMessage,
-				5000
+				10000
 			);
 		} finally {
 			setLoading(false);

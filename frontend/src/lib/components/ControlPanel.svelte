@@ -99,7 +99,7 @@
 				type: 'success',
 				title: 'Algorithm Ready',
 				message: `${$selectedAlgorithm.name} generated ${steps.length} steps`,
-				duration: 3000,
+				duration: 6000,
 			});
 
 		} catch (error) {
@@ -108,7 +108,7 @@
 				type: 'error',
 				title: 'Execution Error',
 				message: errorMessage,
-				duration: 5000,
+				duration: 10000,
 			});
 		} finally {
 			isExecuting = false;

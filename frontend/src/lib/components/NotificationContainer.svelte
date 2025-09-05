@@ -10,7 +10,7 @@
 			type={notification.type}
 			title={notification.title}
 			message={notification.message}
-			duration={notification.duration || 5000}
+			duration={notification.duration || 10000}
 			dismissible={true}
 			onDismiss={() => removeNotification(notification.id)}
 		/>

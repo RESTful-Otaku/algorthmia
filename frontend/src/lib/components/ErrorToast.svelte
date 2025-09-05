@@ -16,7 +16,7 @@
 		type = 'error',
 		title = '',
 		message = '',
-		duration = 5000,
+		duration = 10000,
 		dismissible = true,
 		onDismiss
 	}: Props = $props();

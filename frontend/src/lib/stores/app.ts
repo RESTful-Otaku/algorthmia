@@ -228,7 +228,7 @@ export const setError = (errorMessage: string | null) => {
   error.set(errorMessage);
 };
 
-export const showError = (title: string, message: string, duration: number = 5000) => {
+export const showError = (title: string, message: string, duration: number = 10000) => {
   addNotification({
     type: 'error',
     title,
@@ -237,7 +237,7 @@ export const showError = (title: string, message: string, duration: number = 500
   });
 };
 
-export const showSuccess = (title: string, message: string, duration: number = 3000) => {
+export const showSuccess = (title: string, message: string, duration: number = 6000) => {
   addNotification({
     type: 'success',
     title,
@@ -246,7 +246,7 @@ export const showSuccess = (title: string, message: string, duration: number = 3
   });
 };
 
-export const showWarning = (title: string, message: string, duration: number = 4000) => {
+export const showWarning = (title: string, message: string, duration: number = 8000) => {
   addNotification({
     type: 'warning',
     title,
@@ -255,7 +255,7 @@ export const showWarning = (title: string, message: string, duration: number = 4
   });
 };
 
-export const showInfo = (title: string, message: string, duration: number = 3000) => {
+export const showInfo = (title: string, message: string, duration: number = 6000) => {
   addNotification({
     type: 'info',
     title,
