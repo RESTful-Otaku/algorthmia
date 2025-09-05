@@ -69,12 +69,9 @@
 	onMount(async () => {
 		// Load algorithms first, don't block on modal
 		try {
-			console.log('Starting algorithm loading...');
 			setLoading(true);
 			const fetchedAlgorithms = await api.getAlgorithms();
-			console.log('Fetched algorithms:', fetchedAlgorithms);
 			setAlgorithms(fetchedAlgorithms);
-			console.log('Algorithms set in store');
 			addNotification({
 				type: 'success',
 				title: 'Welcome!',
@@ -82,7 +79,6 @@
 				duration: 3000,
 			});
 		} catch (err) {
-			console.error('Error loading algorithms:', err);
 			const errorMessage = err instanceof APIError ? err.message : 'Failed to load algorithms';
 			setError(errorMessage);
 			showError(
@@ -185,10 +181,15 @@
 	function fuzzySearch(query: string, text: string): boolean {
 		if (!query.trim()) return true;
 		
-		const queryLower = query.toLowerCase();
+		const queryLower = query.toLowerCase().trim();
 		const textLower = text.toLowerCase();
 		
-		// Simple fuzzy matching: check if all characters in query appear in order in text
+		// First try exact substring match (most common case)
+		if (textLower.includes(queryLower)) {
+			return true;
+		}
+		
+		// Then try fuzzy matching: check if all characters in query appear in order in text
 		let queryIndex = 0;
 		for (let i = 0; i < textLower.length && queryIndex < queryLower.length; i++) {
 			if (textLower[i] === queryLower[queryIndex]) {
@@ -206,7 +207,8 @@
 		}
 		
 		return $algorithms.filter(algorithm => {
-			const searchText = `${algorithm.name} ${algorithm.description} ${algorithm.type} ${algorithm.time_complexity} ${algorithm.space_complexity}`;
+			// Search primarily by name, then by other fields
+			const searchText = `${algorithm.name} ${algorithm.type} ${algorithm.description}`;
 			return fuzzySearch(searchQuery, searchText);
 		});
 	}
@@ -214,6 +216,7 @@
 	function clearSearch() {
 		searchQuery = '';
 	}
+
 
 </script>
 
