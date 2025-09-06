@@ -56,7 +56,7 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 		},
 	))
 	stepNumber++
-	
+
 	// Find and highlight the target value in the array (if it exists)
 	targetIndex := -1
 	for i, val := range arr {
@@ -65,7 +65,7 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 			break
 		}
 	}
-	
+
 	if targetIndex >= 0 {
 		// Highlight the target value
 		steps = append(steps, bs.CreateStep(
@@ -74,9 +74,9 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 			arr,
 			[]int{targetIndex},
 			map[string]interface{}{
-				"target":      target,
-				"target_index": targetIndex,
-				"description": fmt.Sprintf("Target %d is at index %d", target, targetIndex),
+				"target":         target,
+				"target_index":   targetIndex,
+				"description":    fmt.Sprintf("Target %d is at index %d", target, targetIndex),
 				"highlight_type": "target",
 			},
 		))
@@ -84,6 +84,7 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 	}
 
 	left, right := 0, len(arr)-1
+	visitedCells := make([]int, 0)
 
 	// Binary search loop
 	for left <= right {
@@ -94,8 +95,16 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 		// Calculate middle index
 		mid := left + (right-left)/2
 
-		// Show the current search range
-		highlights := []int{mid}
+		// Add current cell to visited
+		visitedCells = append(visitedCells, mid)
+
+		// Create highlights: only current cell + target (if exists) + current search range
+		highlights := make([]int, 0)
+		highlights = append(highlights, mid) // Only highlight current search cell
+		if targetIndex >= 0 {
+			highlights = append(highlights, targetIndex)
+		}
+		// Add current search range indicators
 		if left != mid {
 			highlights = append(highlights, left)
 		}
@@ -109,12 +118,13 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 			arr,
 			highlights,
 			map[string]interface{}{
-				"target":      target,
-				"left":        left,
-				"right":       right,
-				"mid":         mid,
-				"mid_value":   arr[mid],
-				"description": fmt.Sprintf("Checking middle index %d: value %d", mid, arr[mid]),
+				"target":         target,
+				"left":           left,
+				"right":          right,
+				"mid":            mid,
+				"mid_value":      arr[mid],
+				"visited_cells":  visitedCells,
+				"description":    fmt.Sprintf("Checking middle index %d: value %d", mid, arr[mid]),
 				"highlight_type": "searching",
 			},
 		))
@@ -127,11 +137,12 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 				stepNumber,
 				"Target found!",
 				arr,
-				[]int{mid},
+				highlights,
 				map[string]interface{}{
 					"target":         target,
 					"found_index":    mid,
 					"found_value":    arr[mid],
+					"visited_cells":  visitedCells,
 					"description":    fmt.Sprintf("🎯 Found target %d at index %d!", target, mid),
 					"highlight_type": "found",
 				},
@@ -143,11 +154,12 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 				stepNumber,
 				"Search complete",
 				arr,
-				[]int{mid},
+				highlights,
 				map[string]interface{}{
 					"target":          target,
 					"found_index":     mid,
 					"found_value":     arr[mid],
+					"visited_cells":   visitedCells,
 					"description":     fmt.Sprintf("Binary search completed! Target %d found at position %d", target, mid),
 					"highlight_type":  "found",
 					"search_complete": true,
@@ -164,13 +176,14 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 				stepNumber,
 				"Target in right half",
 				arr,
-				[]int{left, right},
+				highlights,
 				map[string]interface{}{
-					"target":      target,
-					"left":        left,
-					"right":       right,
-					"mid_value":   arr[mid],
-					"description": fmt.Sprintf("Target %d > %d, searching right half [%d:%d]", target, arr[mid], left, right),
+					"target":        target,
+					"left":          left,
+					"right":         right,
+					"mid_value":     arr[mid],
+					"visited_cells": visitedCells,
+					"description":   fmt.Sprintf("Target %d > %d, searching right half [%d:%d]", target, arr[mid], left, right),
 				},
 			))
 		} else {
@@ -180,28 +193,35 @@ func (bs *BinarySearch) Execute(ctx context.Context, config models.AlgorithmConf
 				stepNumber,
 				"Target in left half",
 				arr,
-				[]int{left, right},
+				highlights,
 				map[string]interface{}{
-					"target":      target,
-					"left":        left,
-					"right":       right,
-					"mid_value":   arr[mid],
-					"description": fmt.Sprintf("Target %d < %d, searching left half [%d:%d]", target, arr[mid], left, right),
+					"target":        target,
+					"left":          left,
+					"right":         right,
+					"mid_value":     arr[mid],
+					"visited_cells": visitedCells,
+					"description":   fmt.Sprintf("Target %d < %d, searching left half [%d:%d]", target, arr[mid], left, right),
 				},
 			))
 		}
 		stepNumber++
 	}
 
-	// Target not found
+	// Target not found - show only target if it exists
+	finalHighlights := make([]int, 0)
+	if targetIndex >= 0 {
+		finalHighlights = append(finalHighlights, targetIndex)
+	}
+
 	steps = append(steps, bs.CreateStep(
 		stepNumber,
 		"Target not found",
 		arr,
-		[]int{},
+		finalHighlights,
 		map[string]interface{}{
-			"target":      target,
-			"description": fmt.Sprintf("Target %d not found in the array", target),
+			"target":        target,
+			"visited_cells": visitedCells,
+			"description":   fmt.Sprintf("Target %d not found in the array", target),
 		},
 	))
 

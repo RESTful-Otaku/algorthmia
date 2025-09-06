@@ -24,11 +24,16 @@
 
 		switch ($selectedAlgorithm.category) {
 			case 'sorting':
-			case 'search':
 				return {
 					...baseParams,
 					arraySize,
-					targetValue: $selectedAlgorithm.category === 'search' ? targetValue : undefined
+					targetValue: undefined
+				};
+			case 'search':
+				return {
+					...baseParams,
+					arraySize: gridWidth * gridHeight, // Use grid dimensions for search
+					targetValue: targetValue
 				};
 			case 'Graph':
 				return {
@@ -112,8 +117,9 @@
 
 		switch ($selectedAlgorithm.category) {
 			case 'Sorting':
-			case 'Search':
 				arraySize = clampValue(Math.floor(Math.random() * 20) + 10, 5, 50);
+				break;
+			case 'Search':
 				targetValue = clampValue(Math.floor(Math.random() * 100) + 1, 1, 100);
 				break;
 			case 'Graph':
@@ -194,8 +200,8 @@
 				</div>
 			</fieldset>
 
-			<!-- Sorting/Search Parameters -->
-			{#if $selectedAlgorithm.category === 'sorting' || $selectedAlgorithm.category === 'search'}
+			<!-- Sorting Parameters -->
+			{#if $selectedAlgorithm.category === 'sorting'}
 				<fieldset class="parameter-group">
 					<legend class="parameter-label">Array Size</legend>
 					<div class="parameter-controls">
@@ -210,50 +216,34 @@
 						<span class="control-value">{arraySize}</span>
 					</div>
 				</fieldset>
+			{/if}
 
-				{#if $selectedAlgorithm.category === 'search'}
-					<fieldset class="parameter-group search-target-group">
-						<legend class="parameter-label">Search Target</legend>
-						<div class="parameter-controls">
-							<!-- Direct input for target value -->
-							<div class="target-input-container">
-								<label class="control-label" for="target-input">Target Value</label>
-								<input
-									id="target-input"
-									type="number"
-									bind:value={targetValue}
-									min="1"
-									max="100"
-									class="target-number-input"
-									placeholder="Enter target value"
-								/>
+			<!-- Search Parameters -->
+			{#if $selectedAlgorithm.category === 'search'}
+				<fieldset class="parameter-group search-target-group">
+					<div class="parameter-controls">
+						<!-- Enhanced target slider -->
+						<div class="target-slider-container">
+							<div class="slider-header">
+								<label class="control-label" for="target-slider">Target Value</label>
+								<div class="target-value-display">{targetValue}</div>
 							</div>
-							
-							<!-- Slider for visual adjustment -->
-							<div class="target-slider-container">
-								<label class="control-label" for="target-slider">Adjust: {targetValue}</label>
-								<input
-									id="target-slider"
-									type="range"
-									bind:value={targetValue}
-									min="1"
-									max="100"
-									class="control-slider"
-								/>
-								<div class="slider-labels">
-									<span>1</span>
-									<span>100</span>
-								</div>
-							</div>
-							
-							<!-- Target value preview -->
-							<div class="target-preview">
-								<span class="target-preview-label">Searching for:</span>
-								<span class="target-preview-value">{targetValue}</span>
+							<input
+								id="target-slider"
+								type="range"
+								bind:value={targetValue}
+								min="1"
+								max="100"
+								class="enhanced-slider"
+								style="--track-color: #e5e7eb; --thumb-color: #ef4444; --thumb-size: 20px;"
+							/>
+							<div class="slider-labels">
+								<span>1</span>
+								<span>100</span>
 							</div>
 						</div>
-					</fieldset>
-				{/if}
+					</div>
+				</fieldset>
 			{/if}
 
 			<!-- Graph Parameters -->
@@ -478,12 +468,13 @@
 
 	.parameter-label {
 		display: block;
-		font-size: 0.875rem;
+		font-size: 1rem;
 		font-weight: 700;
 		color: var(--text-primary);
-		margin-bottom: 0.75rem;
+		margin-bottom: 1rem;
 		letter-spacing: -0.025em;
 		transition: color var(--transition-normal);
+		padding: 0.5rem 0;
 	}
 
 	.parameter-controls {
@@ -582,60 +573,82 @@
 		margin-top: 1rem;
 	}
 
-	/* Search Target Specific Styles */
-	.search-target-group {
-		border: 2px solid var(--accent-primary);
-		background: var(--accent-lighter);
-	}
+	/* Search Target Specific Styles - uses default parameter-group styling */
 
-	.target-input-container {
-		margin-bottom: 1rem;
-	}
 
-	.target-number-input {
-		width: 100%;
-		padding: 0.75rem;
-		border: 2px solid var(--border-primary);
-		border-radius: 6px;
-		background: var(--bg-primary);
-		color: var(--text-primary);
-		font-size: 1rem;
-		font-weight: 600;
-		text-align: center;
-		transition: all var(--transition-normal);
-	}
-
-	.target-number-input:focus {
-		outline: none;
-		border-color: var(--accent-primary);
-		box-shadow: 0 0 0 3px var(--accent-light);
-	}
 
 	.target-slider-container {
 		margin-bottom: 1rem;
 	}
 
-	.target-preview {
+	.slider-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 0.75rem;
+		margin-bottom: 1rem;
+		padding: 0.5rem 0;
+	}
+
+	.target-value-display {
 		background: var(--accent-primary);
 		color: white;
-		border-radius: 6px;
+		padding: 0.25rem 0.75rem;
+		border-radius: 12px;
 		font-weight: 600;
-	}
-
-	.target-preview-label {
 		font-size: 0.875rem;
-		opacity: 0.9;
+		min-width: 2.5rem;
+		text-align: center;
 	}
 
-	.target-preview-value {
-		font-size: 1.25rem;
-		font-weight: 700;
-		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	.enhanced-slider {
+		width: 100%;
+		height: 6px;
+		border-radius: 3px;
+		background: var(--track-color, #e5e7eb);
+		outline: none;
+		-webkit-appearance: none;
+		appearance: none;
+		cursor: pointer;
+		transition: all var(--transition-normal);
 	}
+
+	.enhanced-slider:hover {
+		background: var(--track-color, #d1d5db);
+	}
+
+	.enhanced-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: var(--thumb-size, 20px);
+		height: var(--thumb-size, 20px);
+		border-radius: 50%;
+		background: var(--thumb-color, #ef4444);
+		cursor: pointer;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+		transition: all var(--transition-normal);
+	}
+
+	.enhanced-slider::-webkit-slider-thumb:hover {
+		transform: scale(1.1);
+		box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+	}
+
+	.enhanced-slider::-moz-range-thumb {
+		width: var(--thumb-size, 20px);
+		height: var(--thumb-size, 20px);
+		border-radius: 50%;
+		background: var(--thumb-color, #ef4444);
+		cursor: pointer;
+		border: none;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+		transition: all var(--transition-normal);
+	}
+
+	.enhanced-slider::-moz-range-thumb:hover {
+		transform: scale(1.1);
+		box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+	}
+
 
 	/* Animations */
 	@keyframes fadeInUp {
@@ -658,8 +671,5 @@
 		}
 	}
 
-	.search-target-group .target-preview-value {
-		animation: targetPulse 2s infinite;
-	}
 
 </style>

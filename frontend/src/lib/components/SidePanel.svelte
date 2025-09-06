@@ -166,7 +166,7 @@
 		</div>
 
 		<!-- Algorithm Categories -->
-		<div class="flex-1 overflow-y-auto p-4 space-y-3">
+		<div class="flex-1 overflow-y-auto p-4 space-y-3 scrollable-content">
 			{#each Object.entries(algorithmsByType) as [type, algorithms] (type)}
 				{@const IconComponent = getCategoryIcon(type)}
 				{@const isCollapsed = collapsedSections[type]}
@@ -381,6 +381,30 @@
 		.category-content {
 			padding: 6px;
 		}
+	}
+
+	/* Scrollbar styling */
+	.scrollable-content {
+		scrollbar-width: thin;
+		scrollbar-color: var(--accent-primary) var(--bg-secondary);
+	}
+
+	.scrollable-content::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.scrollable-content::-webkit-scrollbar-track {
+		background: var(--bg-secondary);
+		border-radius: 3px;
+	}
+
+	.scrollable-content::-webkit-scrollbar-thumb {
+		background: var(--accent-primary);
+		border-radius: 3px;
+	}
+
+	.scrollable-content::-webkit-scrollbar-thumb:hover {
+		background: var(--accent-secondary);
 	}
 
 	/* Dark mode adjustments */

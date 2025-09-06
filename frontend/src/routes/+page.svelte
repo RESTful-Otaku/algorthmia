@@ -244,6 +244,60 @@
 		return results.map(result => result.item);
 	}
 
+	// Get filtered algorithms with selected algorithm first
+	function getFilteredAlgorithmsWithSelectedFirst() {
+		const filtered = getFilteredAlgorithms();
+		if (!$selectedAlgorithm) {
+			return filtered;
+		}
+		
+		// Find selected algorithm in filtered list
+		const selectedIndex = filtered.findIndex(alg => alg.id === $selectedAlgorithm.id);
+		if (selectedIndex === -1) {
+			return filtered;
+		}
+		
+		// Move selected algorithm to front
+		const selected = filtered[selectedIndex];
+		const others = filtered.filter(alg => alg.id !== $selectedAlgorithm.id);
+		return [selected, ...others];
+	}
+
+	// Handle algorithm click (select/unselect)
+	function handleAlgorithmClick(algorithm: any) {
+		if ($selectedAlgorithm?.id === algorithm.id) {
+			// Unselect if clicking the currently selected algorithm
+			selectAlgorithm(null);
+			// Collapse parameters section when unselecting
+			isParameterSectionOpen = false;
+		} else {
+			// Select new algorithm
+			selectAlgorithm(algorithm);
+			// Auto-open parameters section when selecting
+			isParameterSectionOpen = true;
+			// Collapse algorithm section when selecting
+			isAlgorithmSectionOpen = false;
+		}
+	}
+
+	// Handle algorithm section click (toggle with parameter section)
+	function handleAlgorithmSectionClick() {
+		isAlgorithmSectionOpen = !isAlgorithmSectionOpen;
+		// If opening algorithm section, close parameter section
+		if (isAlgorithmSectionOpen) {
+			isParameterSectionOpen = false;
+		}
+	}
+
+	// Handle parameter section click (toggle with algorithm section)
+	function handleParameterSectionClick() {
+		isParameterSectionOpen = !isParameterSectionOpen;
+		// If opening parameter section, close algorithm section
+		if (isParameterSectionOpen) {
+			isAlgorithmSectionOpen = false;
+		}
+	}
+
 	function clearSearch() {
 		searchQuery = '';
 	}
@@ -440,8 +494,8 @@
 				<Tooltip text={isAlgorithmSectionOpen ? 'Collapse algorithm selection' : 'Expand algorithm selection'} position="right">
 					<button 
 						class="section-header" 
-						onclick={() => isAlgorithmSectionOpen = !isAlgorithmSectionOpen}
-						onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), isAlgorithmSectionOpen = !isAlgorithmSectionOpen) : null}
+						onclick={() => handleAlgorithmSectionClick()}
+						onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), handleAlgorithmSectionClick()) : null}
 						aria-expanded={isAlgorithmSectionOpen}
 						aria-controls="algorithm-section-content"
 					>
@@ -496,12 +550,12 @@
 
 					<!-- Algorithm Selection List -->
 					<div class="algorithm-list">
-						{#each getFilteredAlgorithms() as algorithm (algorithm.id)}
-							<Tooltip text={`Select ${algorithm.name} - ${algorithm.description}`} position="right">
+						{#each getFilteredAlgorithmsWithSelectedFirst() as algorithm (algorithm.id)}
+							<Tooltip text={`${$selectedAlgorithm?.id === algorithm.id ? 'Unselect' : 'Select'} ${algorithm.name} - ${algorithm.description}`} position="right">
 								<button 
 									class="algorithm-item" 
 									class:selected={$selectedAlgorithm?.id === algorithm.id}
-									onclick={() => selectAlgorithm(algorithm)}
+									onclick={() => handleAlgorithmClick(algorithm)}
 								>
 								<div class="algorithm-info">
 									<div class="algorithm-header">
@@ -548,8 +602,8 @@
 				<Tooltip text={isParameterSectionOpen ? 'Collapse parameter settings' : 'Expand parameter settings'} position="right">
 				<button 
 						class="section-header" 
-						onclick={() => isParameterSectionOpen = !isParameterSectionOpen}
-						onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), isParameterSectionOpen = !isParameterSectionOpen) : null}
+						onclick={() => handleParameterSectionClick()}
+						onkeydown={(e) => e.key === 'Enter' || e.key === ' ' ? (e.preventDefault(), handleParameterSectionClick()) : null}
 						aria-expanded={isParameterSectionOpen}
 						aria-controls="parameter-section-content"
 					>
@@ -907,11 +961,45 @@
 		transform: translateY(-10px);
 	}
 
+	/* Parameters section header should always be visible at bottom */
+	.collapsible-section:last-child {
+		position: sticky;
+		bottom: 0;
+		z-index: 10;
+	}
+
 	.section-content.expanded {
 		padding: 1.5rem;
-		max-height: 1000px;
+		max-height: 600px;
 		opacity: 1;
 		transform: translateY(0);
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: var(--accent-primary) var(--bg-secondary);
+	}
+
+	/* Algorithm section should extend to bottom when expanded */
+	.collapsible-section:first-child .section-content.expanded {
+		max-height: calc(100vh - 200px);
+		min-height: 400px;
+	}
+
+	.section-content.expanded::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.section-content.expanded::-webkit-scrollbar-track {
+		background: var(--bg-secondary);
+		border-radius: 3px;
+	}
+
+	.section-content.expanded::-webkit-scrollbar-thumb {
+		background: var(--accent-primary);
+		border-radius: 3px;
+	}
+
+	.section-content.expanded::-webkit-scrollbar-thumb:hover {
+		background: var(--accent-secondary);
 	}
 
 	/* Search Section Styles */

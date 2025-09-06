@@ -56,7 +56,7 @@ func (ls *LinearSearch) Execute(ctx context.Context, config models.AlgorithmConf
 		},
 	))
 	stepNumber++
-	
+
 	// Find and highlight the target value in the array (if it exists)
 	targetIndex := -1
 	for i, val := range arr {
@@ -65,7 +65,7 @@ func (ls *LinearSearch) Execute(ctx context.Context, config models.AlgorithmConf
 			break
 		}
 	}
-	
+
 	if targetIndex >= 0 {
 		// Highlight the target value
 		steps = append(steps, ls.CreateStep(
@@ -74,19 +74,32 @@ func (ls *LinearSearch) Execute(ctx context.Context, config models.AlgorithmConf
 			arr,
 			[]int{targetIndex},
 			map[string]interface{}{
-				"target":      target,
-				"target_index": targetIndex,
-				"description": fmt.Sprintf("Target %d is at index %d", target, targetIndex),
+				"target":         target,
+				"target_index":   targetIndex,
+				"description":    fmt.Sprintf("Target %d is at index %d", target, targetIndex),
 				"highlight_type": "target",
 			},
 		))
 		stepNumber++
 	}
 
+	// Track visited cells
+	visitedCells := make([]int, 0)
+
 	// Linear search through the array
 	for i := 0; i < len(arr); i++ {
 		if err := ls.CheckContextCancellation(ctx); err != nil {
 			return nil, err
+		}
+
+		// Add current cell to visited
+		visitedCells = append(visitedCells, i)
+
+		// Create highlights: only current cell + target (if exists)
+		highlights := make([]int, 0)
+		highlights = append(highlights, i) // Only highlight current search cell
+		if targetIndex >= 0 {
+			highlights = append(highlights, targetIndex)
 		}
 
 		// Check if current element matches target
@@ -96,11 +109,12 @@ func (ls *LinearSearch) Execute(ctx context.Context, config models.AlgorithmConf
 				stepNumber,
 				"Target found!",
 				arr,
-				[]int{i},
+				highlights,
 				map[string]interface{}{
 					"target":         target,
 					"found_index":    i,
 					"found_value":    arr[i],
+					"visited_cells":  visitedCells,
 					"description":    fmt.Sprintf("🎯 Found target %d at index %d!", target, i),
 					"highlight_type": "found",
 				},
@@ -112,11 +126,12 @@ func (ls *LinearSearch) Execute(ctx context.Context, config models.AlgorithmConf
 				stepNumber,
 				"Search complete",
 				arr,
-				[]int{i},
+				highlights,
 				map[string]interface{}{
 					"target":          target,
 					"found_index":     i,
 					"found_value":     arr[i],
+					"visited_cells":   visitedCells,
 					"description":     fmt.Sprintf("Search completed successfully! Target %d found at position %d", target, i),
 					"highlight_type":  "found",
 					"search_complete": true,
@@ -130,27 +145,34 @@ func (ls *LinearSearch) Execute(ctx context.Context, config models.AlgorithmConf
 			stepNumber,
 			"Checking element",
 			arr,
-			[]int{i},
+			highlights,
 			map[string]interface{}{
-				"target":        target,
-				"current_index": i,
-				"current_value": arr[i],
-				"description":   fmt.Sprintf("Checking index %d: value %d (not the target)", i, arr[i]),
+				"target":         target,
+				"current_index":  i,
+				"current_value":  arr[i],
+				"visited_cells":  visitedCells,
+				"description":    fmt.Sprintf("Checking index %d: value %d (not the target)", i, arr[i]),
 				"highlight_type": "searching",
 			},
 		))
 		stepNumber++
 	}
 
-	// Target not found
+	// Target not found - show only target if it exists
+	finalHighlights := make([]int, 0)
+	if targetIndex >= 0 {
+		finalHighlights = append(finalHighlights, targetIndex)
+	}
+
 	steps = append(steps, ls.CreateStep(
 		stepNumber,
 		"Target not found",
 		arr,
-		[]int{},
+		finalHighlights,
 		map[string]interface{}{
-			"target":      target,
-			"description": fmt.Sprintf("Target %d not found in the array", target),
+			"target":        target,
+			"visited_cells": visitedCells,
+			"description":   fmt.Sprintf("Target %d not found in the array", target),
 		},
 	))
 

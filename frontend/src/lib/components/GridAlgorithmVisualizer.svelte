@@ -13,7 +13,8 @@
 		showSuccess,
 		showInfo,
 		parameters,
-		isModalOpen
+		isModalOpen,
+		addNotification
 	} from '$lib/stores/app';
 	import { api } from '$lib/api';
 	import { trackAlgorithmExecution, trackUserInteraction } from '$lib/utils/analytics';
@@ -30,6 +31,9 @@
 	let animationTimeout: ReturnType<typeof setTimeout> | null = null;
 	let animationFrameId: number | null = null;
 	let animationSpeed = $state(''); // Default to empty to show "Mul" placeholder - speeds: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
+	let currentTargetValue = $state(50); // Track current target value for real-time highlighting
+	let lastFrameTime = 0; // Track last frame time for time-based batching
+	let accumulatedVisitedCells = $state<number[]>([]); // Track all visited cells across all steps
 
 	// Color palette for multiple highlighted cells - optimized for both light and dark modes
 	const highlightColors = [
@@ -53,10 +57,16 @@
 	// Calculate CSS animation duration based on speed multiplier
 	let cssAnimationDuration = $derived((): number => {
 		const speed = parseFloat(animationSpeed) || 1;
-		const baseDuration = 0.5; // Base duration in seconds
-		// For ultra-high speeds, cap the minimum duration to ensure animations are visible
-		const minDuration = speed >= 32 ? 0.05 : 0.01; // 50ms for ultra-fast, 10ms for others
-		return Math.max(baseDuration / speed, minDuration);
+		const baseDuration = 0.5; // Base duration for 1x speed
+		
+		// Calculate duration inversely proportional to speed
+		const calculatedDuration = baseDuration / speed;
+		
+		// Set minimum duration to ensure visibility, but scale it with speed
+		const minDuration = Math.max(0.05, 0.1 / speed); // Minimum scales with speed
+		
+		// Use the larger of calculated duration or minimum duration
+		return Math.max(calculatedDuration, minDuration);
 	});
 
 	// Update CSS custom properties when animation speed changes
@@ -79,6 +89,7 @@
 			stepDescription = '';
 			comparisons = 0;
 			swaps = 0;
+			accumulatedVisitedCells = []; // Reset visited cells tracking
 		} else {
 			// Clear visualization when no algorithm is selected
 			execution.set(null);
@@ -203,10 +214,24 @@
 			
 			const value = randomizedValues[i];
 			
+			// Check if this cell is the current target value (only for search algorithms)
+			const isTarget = $selectedAlgorithm?.type === 'search' && value === currentTargetValue;
+			
+			// Determine cell styling
+			let backgroundColor = 'var(--accent-primary)';
+			let boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+			let border = '2px solid transparent';
+			
+			if (isTarget) {
+				backgroundColor = '#ef4444'; // Red for target
+				boxShadow = '0 0 15px #ef4444, 0 0 30px #ef444480'; // Red glow
+				border = '3px solid #dc2626'; // Darker red border
+			}
+			
 			cellElement.style.cssText = `
 				width: ${finalCellSize}px;
 				height: ${finalCellSize}px;
-				background: var(--accent-primary);
+				background: ${backgroundColor};
 				border-radius: 8px;
 				display: flex;
 				align-items: center;
@@ -216,8 +241,8 @@
 				font-weight: 600;
 				cursor: pointer;
 				transition: all var(--animation-duration-fast, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
-				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-				border: 2px solid transparent;
+				box-shadow: ${boxShadow};
+				border: ${border};
 				animation: cellAppear var(--animation-duration, 0.5s) cubic-bezier(0.4, 0, 0.2, 1);
 				position: relative;
 				z-index: 1;
@@ -309,6 +334,14 @@
 
 			const steps = await api.executeAlgorithm($selectedAlgorithm.id, config);
 			
+			// Show algorithm execution started notification
+			addNotification({
+				type: 'info',
+				title: '🚀 Algorithm Executed',
+				message: `${$selectedAlgorithm.name} completed in ${steps.length} steps`,
+				duration: 3000
+			});
+			
 			// Update execution with generated steps
 			execution.set({
 				id: crypto.randomUUID(),
@@ -323,6 +356,7 @@
 
 			totalSteps = steps.length;
 			currentStep = 0;
+			accumulatedVisitedCells = []; // Reset visited cells for new execution
 			
 			// Track performance metrics
 			const duration = performance.now() - startTime;
@@ -368,6 +402,7 @@
 		if (!$execution || $execution.steps.length === 0 || totalSteps === 0 || totalSteps < 2) return;
 		
 		isPlaying = true;
+		lastFrameTime = 0; // Reset frame time tracking
 		// Start animation from current slider position
 		animate();
 	}
@@ -387,6 +422,7 @@
 	function reset() {
 		currentStep = 0;
 		isPlaying = false;
+		accumulatedVisitedCells = []; // Reset visited cells
 		if (animationTimeout) {
 			clearTimeout(animationTimeout);
 			animationTimeout = null;
@@ -398,6 +434,18 @@
 		// Clear execution data and show blank grid
 		execution.set(null);
 		showBlankGrid();
+		
+		// Reset notification tracking
+		lastNotificationStep = -1;
+		lastNotificationAction = '';
+		
+		// Show reset notification
+		addNotification({
+			type: 'info',
+			title: '🔄 Reset',
+			message: 'Algorithm visualization has been reset',
+			duration: 2000
+		});
 	}
 
 
@@ -405,16 +453,27 @@
 		const target = event.target as HTMLInputElement;
 		const newStep = parseInt(target.value);
 		
-		
 		// Pause animation when user drags slider
 		if (isPlaying) {
 			pause();
 		}
 		
-		// Update current step and render
+		// Update current step and render with enhanced visibility
 		if ($execution && $execution.steps[newStep]) {
 			currentStep = newStep;
+			
+			// Force immediate re-render with enhanced animations for scrubbing
 			renderStep($execution.steps[currentStep], currentStep);
+			
+			// Add a brief highlight effect to make the step change more visible
+			if (container) {
+				container.style.setProperty('--scrub-highlight', '1');
+				setTimeout(() => {
+					if (container) {
+						container.style.setProperty('--scrub-highlight', '0');
+					}
+				}, 200);
+			}
 		}
 	}
 
@@ -434,13 +493,13 @@
 			return;
 		}
 
-		const speed = parseFloat(animationSpeed) || 1; // Default to 1x if empty or invalid
+		const speed = parseFloat(animationSpeed) || 1;
 		
-		// For ultra-high speeds (32x and above), use requestAnimationFrame with batching
-		if (speed >= 32) {
-			animateUltraFast();
+		// Use frame-based batching for all speeds above 2x
+		if (speed >= 2) {
+			animateBatched();
 		} else {
-			// For normal to high speeds, use setTimeout
+			// For very slow speeds (1x-2x), use traditional step-by-step animation
 			animateNormal();
 		}
 	}
@@ -458,35 +517,132 @@
 		currentStep++;
 		renderStep($execution.steps[currentStep], currentStep);
 
-		// Schedule next step with speed multiplier
-		const baseSpeed = 500; // Base speed in milliseconds
+		// Calculate step delay - faster speeds should have shorter delays
 		const speed = parseFloat(animationSpeed) || 1;
-		const actualSpeed = Math.max(1, baseSpeed / speed); // Minimum 1ms
+		const baseDelay = 1000; // Base delay in ms for 1x speed
+		const stepDelay = Math.max(baseDelay / speed, 20); // Minimum 20ms for visibility
+
 		animationTimeout = setTimeout(() => {
 			animate();
-		}, actualSpeed);
+		}, stepDelay);
 	}
 	
-	function animateUltraFast() {
+	function animateBatched() {
 		if (!isPlaying || !$execution || $execution.steps.length === 0 || totalSteps === 0 || totalSteps < 2) return;
 		
 		const speed = parseFloat(animationSpeed) || 1;
-		const stepsPerFrame = Math.max(1, Math.floor(speed / 16)); // Batch multiple steps per frame (adjusted for 32x+ threshold)
-		const maxSteps = Math.min(stepsPerFrame, $execution.steps.length - 1 - currentStep);
+		const currentTime = performance.now();
 		
-		// Render multiple steps in this frame
-		for (let i = 0; i < maxSteps; i++) {
-			if (currentStep >= $execution.steps.length - 1) {
-				isPlaying = false;
-				return;
-			}
-			currentStep++;
-			renderStep($execution.steps[currentStep], currentStep);
+		// For very high speeds (64x+), use time-based processing
+		if (speed >= 64) {
+			animateTimeBased(currentTime);
+			return;
 		}
+		
+		// Calculate step skip interval and steps per frame based on speed
+		let stepSkipInterval;
+		let stepsPerFrame;
+		
+		if (speed >= 32) {
+			stepSkipInterval = 2; // Skip 1 step, show every 2nd step
+			stepsPerFrame = 1; // Process 1 step per frame
+		} else if (speed >= 16) {
+			stepSkipInterval = 1; // Show every step
+			stepsPerFrame = Math.min(Math.floor(speed / 4), 3); // Up to 3 steps per frame
+		} else if (speed >= 4) {
+			stepSkipInterval = 1; // Show every step
+			stepsPerFrame = Math.min(Math.floor(speed / 2), 2); // Up to 2 steps per frame
+		} else {
+			stepSkipInterval = 1; // Show every step
+			stepsPerFrame = 1; // 1 step per frame for 2x-4x
+		}
+		
+		// Calculate how many steps to advance based on skip interval
+		const remainingSteps = $execution.steps.length - 1 - currentStep;
+		const stepsToAdvance = Math.min(stepSkipInterval, remainingSteps);
+		
+		// Advance by the calculated number of steps
+		currentStep += stepsToAdvance;
+		
+		// If we've reached or exceeded the end, stop
+		if (currentStep >= $execution.steps.length - 1) {
+			currentStep = $execution.steps.length - 1; // Ensure we don't go past the end
+			renderStep($execution.steps[currentStep], currentStep);
+			isPlaying = false;
+			return;
+		}
+		
+		// Render the current step
+		renderStep($execution.steps[currentStep], currentStep);
+		
+		// Calculate frame delay based on speed
+		// Higher speeds = shorter delays between frames
+		const baseFrameDelay = 1000; // Base delay for 1x speed
+		const frameDelay = Math.max(baseFrameDelay / speed, 16); // Minimum 16ms for 60fps
 		
 		// Schedule next frame
 		animationFrameId = requestAnimationFrame(() => {
-			animate();
+			setTimeout(() => animate(), frameDelay);
+		});
+	}
+	
+	function animateTimeBased(currentTime: number) {
+		if (!isPlaying || !$execution || $execution.steps.length === 0 || totalSteps === 0 || totalSteps < 2) return;
+		
+		const speed = parseFloat(animationSpeed) || 1;
+		
+		// For ultra-high speeds, skip intermediate steps to move faster
+		// Calculate step skip interval based on speed
+		let stepSkipInterval;
+		if (speed >= 512) {
+			stepSkipInterval = 8; // Skip 7 steps, show every 8th step
+		} else if (speed >= 256) {
+			stepSkipInterval = 6; // Skip 5 steps, show every 6th step
+		} else if (speed >= 128) {
+			stepSkipInterval = 4; // Skip 3 steps, show every 4th step
+		} else if (speed >= 64) {
+			stepSkipInterval = 2; // Skip 1 step, show every 2nd step
+		} else {
+			stepSkipInterval = 1; // Show every step
+		}
+		
+		// Calculate how many steps to advance
+		const remainingSteps = $execution.steps.length - 1 - currentStep;
+		const stepsToAdvance = Math.min(stepSkipInterval, remainingSteps);
+		
+		// Advance by the calculated number of steps
+		currentStep += stepsToAdvance;
+		
+		// If we've reached or exceeded the end, stop
+		if (currentStep >= $execution.steps.length - 1) {
+			currentStep = $execution.steps.length - 1; // Ensure we don't go past the end
+			renderStep($execution.steps[currentStep], currentStep);
+			isPlaying = false;
+			return;
+		}
+		
+		// Render the current step
+		renderStep($execution.steps[currentStep], currentStep);
+		
+		// Calculate delay based on speed - faster for higher speeds
+		let frameDelay;
+		if (speed >= 512) {
+			frameDelay = 5; // 5ms for 512x speed
+		} else if (speed >= 256) {
+			frameDelay = 8; // 8ms for 256x speed
+		} else if (speed >= 128) {
+			frameDelay = 12; // 12ms for 128x speed
+		} else if (speed >= 64) {
+			frameDelay = 16; // 16ms for 64x speed
+		} else {
+			frameDelay = 20; // 20ms for other speeds
+		}
+		
+		// Schedule next frame with calculated delay
+		animationFrameId = requestAnimationFrame(() => {
+			setTimeout(() => {
+				animateTimeBased(performance.now());
+			}, frameDelay);
 		});
 	}
 
@@ -536,11 +692,25 @@
 				const index = y * paramGridWidth + x;
 				const cellData = grid[y] && grid[y][x] ? grid[y][x] : { value: index + 1 };
 				
+				// Check if this cell is the current target value (only for search algorithms)
+				const isTarget = $selectedAlgorithm?.type === 'search' && cellData.value === currentTargetValue;
+				
+				// Determine cell styling
+				let backgroundColor = 'var(--accent-primary)';
+				let boxShadow = 'var(--shadow-xs)';
+				let border = '1px solid var(--border-primary)';
+				
+				if (isTarget) {
+					backgroundColor = '#ef4444'; // Red for target
+					boxShadow = '0 0 15px #ef4444, 0 0 30px #ef444480'; // Red glow
+					border = '3px solid #dc2626'; // Darker red border
+				}
+				
 				cellElement.style.cssText = `
 					width: ${finalCellSize}px;
 					height: ${finalCellSize}px;
-					background: var(--accent-primary);
-					border: 1px solid var(--border-primary);
+					background: ${backgroundColor};
+					border: ${border};
 					border-radius: 4px;
 					display: flex;
 					align-items: center;
@@ -549,8 +719,9 @@
 					font-size: 12px;
 					font-weight: 600;
 					cursor: pointer;
-					transition: all var(--transition-normal);
-					box-shadow: var(--shadow-xs);
+					transition: all var(--animation-duration) cubic-bezier(0.4, 0, 0.2, 1);
+					box-shadow: ${boxShadow};
+					animation: cellAppear var(--animation-duration) ease-out;
 				`;
 				cellElement.textContent = cellData.value.toString();
 				cellElement.onclick = () => handleCellClick(x, y, cellData);
@@ -583,6 +754,119 @@
 		}
 	}, 16); // ~60fps
 
+	// Track last notification to avoid spam
+	let lastNotificationStep = -1;
+	let lastNotificationAction = '';
+
+	function showAlgorithmNotification(step: any, stepIndex: number) {
+		// Avoid showing duplicate notifications for the same step
+		if (stepIndex === lastNotificationStep && step.action === lastNotificationAction) {
+			return;
+		}
+
+		const algorithmType = $selectedAlgorithm?.type;
+		const highlightType = step.metadata?.highlight_type;
+		const action = step.action;
+		const description = step.metadata?.description || '';
+
+		// Search algorithm notifications
+		if (algorithmType === 'search') {
+			if (highlightType === 'found') {
+				addNotification({
+					type: 'success',
+					title: '🎯 Target Found!',
+					message: `Found the target value ${step.metadata?.target} at position ${step.metadata?.current_index || 'unknown'}`,
+					duration: 5000
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			} else if (action === 'Starting linear search' || action === 'Starting binary search') {
+				addNotification({
+					type: 'info',
+					title: '🔍 Search Started',
+					message: `Looking for target value ${step.metadata?.target || 'unknown'} in the array`,
+					duration: 3000
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			} else if (highlightType === 'searching' && step.metadata?.current_index !== undefined) {
+				// Only show every few steps to avoid spam
+				if (stepIndex % 3 === 0) {
+					addNotification({
+						type: 'info',
+						title: '🔍 Searching...',
+						message: `Checking position ${step.metadata.current_index}: value ${step.metadata.current_value}`,
+						duration: 2000
+					});
+					lastNotificationStep = stepIndex;
+					lastNotificationAction = action;
+				}
+			}
+		}
+		// Sorting algorithm notifications
+		else if (algorithmType === 'sorting') {
+			if (action === 'Starting' || action === 'Starting sort') {
+				addNotification({
+					type: 'info',
+					title: '🔄 Sort Started',
+					message: `Starting ${$selectedAlgorithm?.name || 'sorting algorithm'}`,
+					duration: 3000
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			} else if (action === 'swap' || action === 'swap_complete') {
+				addNotification({
+					type: 'warning',
+					title: '🔄 Elements Swapped',
+					message: `Swapped elements at positions ${step.metadata?.swap_indices?.[0] || '?'} and ${step.metadata?.swap_indices?.[1] || '?'}`,
+					duration: 2000
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			} else if (action === 'compare' && step.metadata?.comparison_result) {
+				const result = step.metadata.comparison_result;
+				const message = result === 'greater' ? 'First element is greater' : 
+							  result === 'less' ? 'First element is less' : 
+							  'Elements are equal';
+				addNotification({
+					type: 'info',
+					title: '⚖️ Comparison',
+					message: message,
+					duration: 1500
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			} else if (action === 'partition' || action === 'partition_complete') {
+				addNotification({
+					type: 'info',
+					title: '📊 Partitioning',
+					message: `Partitioning array around pivot value ${step.metadata?.pivot_value || 'unknown'}`,
+					duration: 2500
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			} else if (action === 'merge' || action === 'merge_complete') {
+				addNotification({
+					type: 'info',
+					title: '🔗 Merging',
+					message: `Merging sorted subarrays`,
+					duration: 2000
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			} else if (action === 'sort_complete' || action === 'Sort complete') {
+				addNotification({
+					type: 'success',
+					title: '✅ Sort Complete!',
+					message: `Array is now sorted! Completed in ${stepIndex + 1} steps`,
+					duration: 5000
+				});
+				lastNotificationStep = stepIndex;
+				lastNotificationAction = action;
+			}
+		}
+	}
+
 	function renderStep(step: any, stepIndex: number) {
 		// Update step information
 		let description = step.metadata?.description || step.action || 'Processing...';
@@ -592,7 +876,24 @@
 			description = `🎯 ${description}`;
 		}
 		
+		// Add speed indicator for high speeds
+		const speed = parseFloat(animationSpeed) || 1;
+		if (speed >= 512) {
+			description = `⚡⚡⚡ ${description} (8x skip)`;
+		} else if (speed >= 256) {
+			description = `⚡⚡ ${description} (6x skip)`;
+		} else if (speed >= 128) {
+			description = `⚡⚡ ${description} (4x skip)`;
+		} else if (speed >= 64) {
+			description = `⚡ ${description} (2x skip)`;
+		} else if (speed >= 32) {
+			description = `⚡ ${description} (2x skip)`;
+		}
+		
 		stepDescription = description;
+		
+		// Show notifications for important algorithm steps
+		showAlgorithmNotification(step, stepIndex);
 		
 		// Update statistics
 		if (step.action === 'compare') {
@@ -601,7 +902,17 @@
 			swaps++;
 		}
 		
-		debouncedRenderStep(step, stepIndex);
+		// Update visited cells for search algorithms (backend sends cumulative data)
+		if ($selectedAlgorithm?.type === 'search' && step.metadata?.visited_cells) {
+			accumulatedVisitedCells = step.metadata.visited_cells as number[];
+		}
+		
+		// For high speeds, force immediate rendering to ensure visibility
+		if (speed >= 64) {
+			renderGridFromArray(step, stepIndex);
+		} else {
+			debouncedRenderStep(step, stepIndex);
+		}
 	}
 
 	function renderGridFromArray(step: any, stepIndex: number) {
@@ -672,36 +983,59 @@
 			let boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
 			let border = '2px solid transparent';
 			
-			if (isHighlighted && highlightIndex >= 0) {
-				// Check highlight type for search algorithms
-				const highlightType = step.metadata?.highlight_type;
-				if (highlightType === 'found') {
-					// Special styling for found target
-					backgroundColor = '#10b981'; // Emerald green
-					boxShadow = `0 0 20px #10b981, 0 0 40px #10b98180`; // Double glow effect
-					border = '3px solid #059669'; // Darker green border
-				} else if (highlightType === 'target') {
-					// Red highlighting for target value
-					backgroundColor = '#ef4444'; // Red
-					boxShadow = `0 0 15px #ef4444, 0 0 30px #ef444480`; // Red glow
-					border = '3px solid #dc2626'; // Darker red border
-				} else if (highlightType === 'searching') {
-					// Green highlighting for search attempts
-					backgroundColor = '#22c55e'; // Green
-					boxShadow = `0 0 15px #22c55e, 0 0 30px #22c55e80`; // Green glow
-					border = '2px solid #16a34a'; // Darker green border
-				} else {
-					// Regular highlight
-					const highlightColor = getHighlightColor(highlightIndex);
-					backgroundColor = highlightColor;
-					boxShadow = `0 0 15px ${highlightColor}80`;
-					border = `2px solid ${highlightColor}`;
-				}
+			// Check if this cell is the target value (only for search algorithms)
+			const stepTarget = step.metadata?.target;
+			const targetValue = stepTarget !== undefined ? stepTarget : currentTargetValue;
+			const isTarget = $selectedAlgorithm?.type === 'search' && value === targetValue;
+			// Check if this cell has been visited (only for search algorithms)
+			// Use accumulated visited cells for better tracking across skipped steps
+			const isVisited = $selectedAlgorithm?.type === 'search' && accumulatedVisitedCells.includes(i);
+			
+			
+			// Determine cell styling with proper priority
+			const highlightType = step.metadata?.highlight_type;
+			const isCurrentSearch = isHighlighted && highlightType === 'searching';
+			const isFound = isHighlighted && highlightType === 'found';
+			
+			if (isFound) {
+				// Special styling for found target (highest priority)
+				backgroundColor = '#fbbf24'; // Yellow for found
+				boxShadow = `0 0 20px #fbbf24, 0 0 40px #fbbf2480`; // Yellow glow effect
+				border = '3px solid #f59e0b'; // Darker yellow border
+			} else if (isTarget && isCurrentSearch) {
+				// Target cell being searched - show as red with green accent
+				backgroundColor = '#ef4444'; // Red for target
+				boxShadow = `0 0 15px #ef4444, 0 0 30px #ef444480, 0 0 5px #22c55e`; // Red glow with green accent
+				border = '3px solid #dc2626'; // Darker red border
+			} else if (isTarget) {
+				// Target cell not being searched - show as red
+				backgroundColor = '#ef4444'; // Red
+				boxShadow = `0 0 15px #ef4444, 0 0 30px #ef444480`; // Red glow
+				border = '3px solid #dc2626'; // Darker red border
+			} else if (isCurrentSearch) {
+				// Current search cell (not target) - show as green
+				backgroundColor = '#22c55e'; // Green
+				boxShadow = `0 0 15px #22c55e, 0 0 30px #22c55e80`; // Green glow
+				border = '2px solid #16a34a'; // Darker green border
+			} else if (isVisited) {
+				// Visited cells - show as grey
+				backgroundColor = '#6b7280'; // Grey
+				boxShadow = `0 0 10px #6b728080`; // Subtle grey glow
+				border = '2px solid #4b5563'; // Darker grey border
 			} else if (isHighlighted) {
-				// Fallback for highlighted cells without valid index
-				backgroundColor = highlightColors[0]; // Use first color (green)
-				boxShadow = `0 0 15px ${highlightColors[0]}80`;
-				border = `2px solid ${highlightColors[0]}`;
+				// Fallback for other highlighted cells
+				const highlightColor = getHighlightColor(highlightIndex);
+				backgroundColor = highlightColor;
+				boxShadow = `0 0 15px ${highlightColor}80`;
+				border = `2px solid ${highlightColor}`;
+			}
+			
+			// Add animation class for highlighted cells
+			let animationClass = 'cellAppear';
+			if (isCurrentSearch || isFound) {
+				animationClass = 'cellHighlight';
+			} else if (isHighlighted) {
+				animationClass = 'cellStepChange';
 			}
 			
 			cellElement.style.cssText = `
@@ -719,7 +1053,7 @@
 				transition: all var(--animation-duration-fast, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
 				box-shadow: ${boxShadow};
 				border: ${border};
-				animation: cellAppear var(--animation-duration, 0.5s) cubic-bezier(0.4, 0, 0.2, 1);
+				animation: ${animationClass} var(--animation-duration, 0.5s) cubic-bezier(0.4, 0, 0.2, 1);
 				position: relative;
 				z-index: 1;
 			`;
@@ -818,6 +1152,13 @@
 	$effect(() => {
 		if (isInitialized && $parameters) {
 			showBlankGrid();
+		}
+	});
+
+	// Update current target value when parameters change
+	$effect(() => {
+		if ($parameters && $parameters.targetValue) {
+			currentTargetValue = $parameters.targetValue;
 		}
 	});
 </script>
@@ -1521,15 +1862,29 @@
 		z-index: 1;
 	}
 
-	/* Grid Cell Animations */
+	/* Grid Cell Animations - Enhanced for better visibility */
 	@keyframes cellAppear {
 		0% { 
 			opacity: 0;
-			transform: scale(0.8) translateY(10px);
+			transform: scale(0.7) translateY(15px);
+			filter: blur(2px);
 		}
-		50% { 
+		20% { 
 			opacity: 0.8;
-			transform: scale(1.05) translateY(-2px);
+			transform: scale(1.15) translateY(-5px);
+			filter: blur(0px);
+		}
+		40% { 
+			opacity: 0.95;
+			transform: scale(1.05) translateY(2px);
+		}
+		60% { 
+			opacity: 1;
+			transform: scale(0.98) translateY(-1px);
+		}
+		80% { 
+			opacity: 1;
+			transform: scale(1.02) translateY(0.5px);
 		}
 		100% { 
 			opacity: 1;
@@ -1537,10 +1892,78 @@
 		}
 	}
 
+	@keyframes cellHighlight {
+		0% { 
+			transform: scale(1);
+			box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+			filter: brightness(1);
+		}
+		25% { 
+			transform: scale(1.08);
+			box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+			filter: brightness(1.2);
+		}
+		50% { 
+			transform: scale(1.12);
+			box-shadow: 0 0 35px rgba(0, 0, 0, 0.5);
+			filter: brightness(1.3);
+		}
+		75% { 
+			transform: scale(1.08);
+			box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+			filter: brightness(1.2);
+		}
+		100% { 
+			transform: scale(1);
+			box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+			filter: brightness(1);
+		}
+	}
+
+	@keyframes cellStepChange {
+		0% { 
+			transform: scale(1);
+			box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+		}
+		30% { 
+			transform: scale(1.1);
+			box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+		}
+		70% { 
+			transform: scale(1.05);
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+		}
+		100% { 
+			transform: scale(1);
+			box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+		}
+	}
+
 	@keyframes cellJiggle {
 		0%, 100% { transform: translateX(0); }
 		25% { transform: translateX(-2px); }
 		75% { transform: translateX(2px); }
+	}
+
+	@keyframes scrubHighlight {
+		0% { 
+			transform: scale(1);
+			filter: brightness(1);
+		}
+		50% { 
+			transform: scale(1.02);
+			filter: brightness(1.1);
+		}
+		100% { 
+			transform: scale(1);
+			filter: brightness(1);
+		}
+	}
+
+	/* Scrub highlight effect */
+	/* svelte-ignore css_unused_selector */
+	.responsive-grid {
+		animation: scrubHighlight 0.2s ease-out;
 	}
 
 </style>
