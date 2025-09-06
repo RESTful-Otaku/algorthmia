@@ -1,76 +1,61 @@
-# Multi-stage build for Algorithm Visualizer
-FROM node:18-alpine AS frontend-builder
-
-# Set working directory
-WORKDIR /app
-
-# Copy frontend package files
-COPY frontend/package*.json ./
-COPY frontend/bun.lock ./
-
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy frontend source
-COPY frontend/ ./
-
-# Build frontend
-RUN npm run build
-
-# Go build stage
+# Multi-stage Docker build for Algorthmia
+# Stage 1: Build Go backend
 FROM golang:1.21-alpine AS backend-builder
 
-# Install git and ca-certificates
-RUN apk add --no-cache git ca-certificates
-
-# Set working directory
 WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
 
 # Copy go mod files
 COPY backend/go.mod backend/go.sum ./
-
-# Download dependencies
 RUN go mod download
 
 # Copy backend source
 COPY backend/ ./
 
-# Build backend
+# Build the backend binary
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
 
-# Final Alpine image
-FROM alpine:latest
+# Stage 2: Build Svelte frontend
+FROM node:18-alpine AS frontend-builder
 
-# Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates
-
-# Create non-root user
-RUN adduser -D -s /bin/sh appuser
-
-# Set working directory
 WORKDIR /app
 
-# Copy backend binary
-COPY --from=backend-builder /app/main .
+# Copy package files
+COPY frontend/package*.json ./
+RUN npm ci --only=production
 
-# Copy frontend build
-COPY --from=frontend-builder /app/dist ./frontend/dist
+# Copy frontend source
+COPY frontend/ ./
 
-# Copy configuration
-COPY backend/config.yaml .
+# Build the frontend
+RUN npm run build
 
-# Change ownership to appuser
-RUN chown -R appuser:appuser /app
+# Stage 3: Create static server for GitHub Pages
+FROM nginx:alpine AS production
 
-# Switch to non-root user
-USER appuser
+# Install Node.js for serving SPA
+RUN apk add --no-cache nodejs npm
+
+# Copy built frontend
+COPY --from=frontend-builder /app/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy the static server script
+COPY static-server.js /usr/share/nginx/html/
+
+# Create a simple package.json for the static server
+RUN echo '{"name":"algorthmia-static","version":"1.0.0","dependencies":{"express":"^4.18.2","cors":"^2.8.5"}}' > /usr/share/nginx/html/package.json
+
+# Install dependencies for static server
+WORKDIR /usr/share/nginx/html
+RUN npm install
 
 # Expose port
-EXPOSE 8080
+EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
-
-# Run the application
-CMD ["./main"]
+# Start the static server
+CMD ["node", "static-server.js"]

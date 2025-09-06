@@ -1,89 +1,166 @@
-name: Build and Deploy to GitHub Pages
+name: 🚀 Build, Test & Deploy
 
 on:
   push:
+    branches: [ main, develop ]
+  pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+env:
+  NODE_VERSION: '18'
+  GO_VERSION: '1.21'
 
 jobs:
-  build:
+  # Test job
+  test:
+    name: 🧪 Test Suite
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: 🔧 Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: 📦 Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+      
+    - name: 📦 Install backend dependencies
+      working-directory: ./backend
+      run: go mod download
+      
+    - name: 🧪 Run frontend tests
+      working-directory: ./frontend
+      run: npm run test
+      
+    - name: 🧪 Run backend tests
+      working-directory: ./backend
+      run: go test ./...
+      
+    - name: 🔍 Run linting
+      working-directory: ./frontend
+      run: npm run lint
+      
+    - name: 🏗️ Build frontend
+      working-directory: ./frontend
+      run: npm run build
+      
+    - name: 🏗️ Build backend
+      working-directory: ./backend
+      run: go build -o main ./cmd/server
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm run build
-
-      - name: Build backend
-        run: |
-          cd backend
-          go mod download
-          CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
-
-      - name: Create deployment package
-        run: |
-          mkdir -p deploy
-          cp backend/main deploy/
-          cp backend/config.yaml deploy/
-          cp -r frontend/dist deploy/frontend/
-          echo "Algorithm Visualizer" > deploy/index.html
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: algorthmia-deploy
-          path: deploy/
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # Build and deploy job
+  build-and-deploy:
+    name: 🏗️ Build & Deploy
     runs-on: ubuntu-latest
-    needs: build
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: algorthmia-deploy
-          path: deploy/
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: 🔧 Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
+    - name: 📦 Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+      
+    - name: 🏗️ Build frontend
+      working-directory: ./frontend
+      run: npm run build
+      env:
+        VITE_API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://algorthmia-api.herokuapp.com' }}
+        
+    - name: 🐳 Build Docker image
+      run: |
+        docker build -t algorthmia:latest .
+        
+    - name: 🧪 Test Docker image
+      run: |
+        docker run --name algorthmia-test -d -p 8080:80 algorthmia:latest
+        sleep 10
+        curl -f http://localhost:8080/health || exit 1
+        docker stop algorthmia-test
+        docker rm algorthmia-test
+        
+    - name: 📦 Create deployment package
+      run: |
+        mkdir -p deploy
+        cp -r frontend/build/* deploy/
+        cp static-server.js deploy/
+        cp nginx.conf deploy/
+        echo '{"name":"algorthmia-static","version":"1.0.0","dependencies":{"express":"^4.18.2","cors":"^2.8.5"}}' > deploy/package.json
+        
+    - name: 🚀 Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./deploy
+        cname: ${{ secrets.CUSTOM_DOMAIN || '' }}
+        enable_jekyll: false
+        
+    - name: 📝 Create deployment summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Frontend built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Docker image built and tested" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔗 Live URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload to Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: deploy/
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+  # Docker Hub deployment (optional)
+  docker-deploy:
+    name: 🐳 Deploy to Docker Hub
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐳 Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+    - name: 🏷️ Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ secrets.DOCKERHUB_USERNAME }}/algorthmia
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: 🐳 Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}

@@ -357,6 +357,26 @@ docker_run() {
     fi
 }
 
+docker_deploy() {
+    print_info "Deploying with Docker..."
+    if command_exists docker; then
+        ./deploy.sh deploy
+    else
+        print_warning "Docker not found. Please install Docker"
+        exit 1
+    fi
+}
+
+docker_test() {
+    print_info "Testing Docker deployment..."
+    if command_exists docker; then
+        ./deploy.sh test
+    else
+        print_warning "Docker not found. Please install Docker"
+        exit 1
+    fi
+}
+
 install_deps() {
     print_info "Installing all dependencies..."
     
@@ -434,6 +454,8 @@ show_help() {
     echo "  stop        - Stop all running processes and free ports"
     echo "  docker      - Build Docker image"
     echo "  run         - Run with Docker Compose"
+    echo "  deploy      - Deploy with Docker"
+    echo "  test-docker - Test Docker deployment"
     echo "  clean       - Clean build artifacts"
     echo "  help        - Show this help message"
     echo ""
@@ -488,6 +510,12 @@ case "${1:-start}" in
         ;;
     "run")
         docker_run
+        ;;
+    "deploy")
+        docker_deploy
+        ;;
+    "test-docker")
+        docker_test
         ;;
     "clean")
         clean
