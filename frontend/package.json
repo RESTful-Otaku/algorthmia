@@ -30,6 +30,7 @@
 		"vitest": "^3.2.4"
 	},
 	"dependencies": {
+		"@sveltejs/adapter-static": "^3.0.9",
 		"@tailwindcss/typography": "^0.5.16",
 		"clsx": "^2.1.1",
 		"fuse.js": "^7.1.0",
