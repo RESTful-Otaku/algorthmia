@@ -21,7 +21,8 @@
 		showError,
 		showInfo,
 		selectAlgorithm,
-		filteredAlgorithms
+		filteredAlgorithms,
+		setModalOpen
 	} from '$lib/stores/app';
 	import { api, APIError } from '$lib/api';
 
@@ -79,12 +80,16 @@
 			// Initialize Fuse.js after algorithms are loaded
 			initializeFuse();
 			
-			addNotification({
-				type: 'success',
-				title: 'Welcome!',
-				message: 'Algorithm Visualizer loaded successfully. Select an algorithm to get started.',
-				duration: 6000,
-			});
+			// Only show welcome notification if modal is not showing
+			// This prevents notifications from interfering with the modal
+			if (!showWelcomeModal) {
+				addNotification({
+					type: 'success',
+					title: 'Welcome!',
+					message: 'Algorithm Visualizer loaded successfully. Select an algorithm to get started.',
+					duration: 6000,
+				});
+			}
 		} catch (err) {
 			const errorMessage = err instanceof APIError ? err.message : 'Failed to load algorithms';
 			setError(errorMessage);
@@ -149,12 +154,25 @@
 		}
 	});
 
+	// Sync modal state with global store
+	$effect(() => {
+		setModalOpen(showWelcomeModal);
+	});
+
 	function handleWelcomeClose() {
 		console.log('Welcome modal closing...');
 		showWelcomeModal = false;
 		if (browser) {
 			localStorage.setItem('hasSeenWelcome', 'true');
 		}
+		
+		// Show welcome notification after modal closes
+		addNotification({
+			type: 'success',
+			title: 'Welcome!',
+			message: 'Algorithm Visualizer loaded successfully. Select an algorithm to get started.',
+			duration: 6000,
+		});
 	}
 
 	function nextIntroStep() {
@@ -176,12 +194,9 @@
 	}
 
 	function handleModalBackdropClick(e: MouseEvent) {
-		console.log('Modal backdrop clicked', e.target, e.currentTarget);
-		// Only close if clicking directly on the backdrop, not on the modal content
-		if (e.target === e.currentTarget) {
-			console.log('Closing modal due to backdrop click');
-			handleWelcomeClose();
-		}
+		// Modal should not close when clicking outside - user must explicitly interact
+		// Just prevent any accidental behavior
+		e.preventDefault();
 	}
 
 	function handleModalContentClick(e: MouseEvent) {
@@ -241,18 +256,19 @@
 	<div 
 		class="intro-modal-backdrop" 
 		onclick={handleModalBackdropClick}
-		onkeydown={(e) => e.key === 'Escape' && handleWelcomeClose()}
-		role="button"
-		tabindex="0"
-		aria-label="Click outside to close modal"
+		onkeydown={(e) => e.preventDefault()}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Welcome modal - complete the introduction to continue"
+		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div 
 			class="intro-modal" 
 			onclick={handleModalContentClick}
 			onkeydown={(e) => e.stopPropagation()}
-			role="dialog"
-			aria-modal="true"
 			aria-labelledby="intro-title"
+			role="document"
 		>
 			<!-- Progress Bar -->
 			<div class="intro-progress">
@@ -304,7 +320,7 @@
 {/if}
 
 <!-- Hint Notifications -->
-{#if showHints}
+{#if showHints && !showWelcomeModal}
 	<Tooltip text="Click to dismiss this helpful hint" position="left">
 		<div class="fixed top-4 right-4 z-[10000] animate-in slide-in-from-right-4 fade-in-0 duration-500 ease-out">
 			<div 
@@ -812,6 +828,8 @@
 		display: flex;
 		flex-direction: column;
 		position: relative;
+		padding: 1rem 1.5rem 1rem 1rem;
+		box-sizing: border-box;
 	}
 
 
@@ -1117,18 +1135,20 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba(0, 0, 0, 0.6);
+		background: rgba(0, 0, 0, 0.7);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 1000;
-		backdrop-filter: blur(4px);
+		z-index: 10003;
+		backdrop-filter: blur(6px);
 		animation: fadeIn 0.4s ease-out;
+		cursor: default;
+		user-select: none;
 	}
 
 	.intro-modal {
 		background: var(--bg-primary);
-		border: 1px solid var(--border-primary);
+		border: 2px solid var(--accent-primary);
 		box-shadow: var(--shadow-2xl);
 		max-width: 500px;
 		width: 90%;
@@ -1136,6 +1156,7 @@
 		overflow: hidden;
 		animation: slideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 		position: relative;
+		cursor: default;
 	}
 
 	.intro-progress {
@@ -1312,6 +1333,10 @@
 	}
 
 	@media (max-width: 768px) {
+		.visualization-container {
+			padding: 0.75rem 1rem 0.75rem 0.75rem;
+		}
+		
 		.main-container {
 			flex-direction: row;
 			height: 100vh;
@@ -1396,6 +1421,10 @@
 	}
 
 	@media (max-width: 480px) {
+		.visualization-container {
+			padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+		}
+		
 		.panel-content {
 			padding: 0.75rem;
 		}

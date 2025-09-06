@@ -23,12 +23,12 @@
 		};
 
 		switch ($selectedAlgorithm.category) {
-			case 'Sorting':
-			case 'Search':
+			case 'sorting':
+			case 'search':
 				return {
 					...baseParams,
 					arraySize,
-					targetValue: $selectedAlgorithm.category === 'Search' ? targetValue : undefined
+					targetValue: $selectedAlgorithm.category === 'search' ? targetValue : undefined
 				};
 			case 'Graph':
 				return {
@@ -195,7 +195,7 @@
 			</fieldset>
 
 			<!-- Sorting/Search Parameters -->
-			{#if $selectedAlgorithm.category === 'Sorting' || $selectedAlgorithm.category === 'Search'}
+			{#if $selectedAlgorithm.category === 'sorting' || $selectedAlgorithm.category === 'search'}
 				<fieldset class="parameter-group">
 					<legend class="parameter-label">Array Size</legend>
 					<div class="parameter-controls">
@@ -211,22 +211,45 @@
 					</div>
 				</fieldset>
 
-				{#if $selectedAlgorithm.category === 'Search'}
-					<fieldset class="parameter-group">
-						<legend class="parameter-label">Target Value</legend>
+				{#if $selectedAlgorithm.category === 'search'}
+					<fieldset class="parameter-group search-target-group">
+						<legend class="parameter-label">Search Target</legend>
 						<div class="parameter-controls">
-							<label class="control-label" for="target-value">Value: {targetValue}</label>
-							<input
-								id="target-value"
-								type="range"
-								bind:value={targetValue}
-								min="1"
-								max="100"
-								class="control-slider"
-							/>
-							<div class="slider-labels">
-								<span>1</span>
-								<span>100</span>
+							<!-- Direct input for target value -->
+							<div class="target-input-container">
+								<label class="control-label" for="target-input">Target Value</label>
+								<input
+									id="target-input"
+									type="number"
+									bind:value={targetValue}
+									min="1"
+									max="100"
+									class="target-number-input"
+									placeholder="Enter target value"
+								/>
+							</div>
+							
+							<!-- Slider for visual adjustment -->
+							<div class="target-slider-container">
+								<label class="control-label" for="target-slider">Adjust: {targetValue}</label>
+								<input
+									id="target-slider"
+									type="range"
+									bind:value={targetValue}
+									min="1"
+									max="100"
+									class="control-slider"
+								/>
+								<div class="slider-labels">
+									<span>1</span>
+									<span>100</span>
+								</div>
+							</div>
+							
+							<!-- Target value preview -->
+							<div class="target-preview">
+								<span class="target-preview-label">Searching for:</span>
+								<span class="target-preview-value">{targetValue}</span>
 							</div>
 						</div>
 					</fieldset>
@@ -559,6 +582,61 @@
 		margin-top: 1rem;
 	}
 
+	/* Search Target Specific Styles */
+	.search-target-group {
+		border: 2px solid var(--accent-primary);
+		background: var(--accent-lighter);
+	}
+
+	.target-input-container {
+		margin-bottom: 1rem;
+	}
+
+	.target-number-input {
+		width: 100%;
+		padding: 0.75rem;
+		border: 2px solid var(--border-primary);
+		border-radius: 6px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		font-size: 1rem;
+		font-weight: 600;
+		text-align: center;
+		transition: all var(--transition-normal);
+	}
+
+	.target-number-input:focus {
+		outline: none;
+		border-color: var(--accent-primary);
+		box-shadow: 0 0 0 3px var(--accent-light);
+	}
+
+	.target-slider-container {
+		margin-bottom: 1rem;
+	}
+
+	.target-preview {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem;
+		background: var(--accent-primary);
+		color: white;
+		border-radius: 6px;
+		font-weight: 600;
+	}
+
+	.target-preview-label {
+		font-size: 0.875rem;
+		opacity: 0.9;
+	}
+
+	.target-preview-value {
+		font-size: 1.25rem;
+		font-weight: 700;
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	}
+
 	/* Animations */
 	@keyframes fadeInUp {
 		from { 
@@ -569,6 +647,19 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
+	}
+
+	@keyframes targetPulse {
+		0%, 100% { 
+			transform: scale(1);
+		}
+		50% { 
+			transform: scale(1.05);
+		}
+	}
+
+	.search-target-group .target-preview-value {
+		animation: targetPulse 2s infinite;
 	}
 
 </style>

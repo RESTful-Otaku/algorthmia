@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { selectedAlgorithm } from '$lib/stores/app';
 
 	// Props
 	let { isLeftPanelOpen = true, onToggleLeftPanel }: { isLeftPanelOpen?: boolean; onToggleLeftPanel: () => void } = $props();
@@ -61,6 +62,9 @@
 			</button>
 			<div class="title-section">
 				<h1 class="app-title">Algorthmia</h1>
+				{#if $selectedAlgorithm}
+					<span class="selected-algorithm">{$selectedAlgorithm.name}</span>
+				{/if}
 				<span class="app-version">v1.0.0</span>
 			</div>
 		</div>
@@ -193,6 +197,22 @@
 		background-clip: text;
 	}
 
+	.selected-algorithm {
+		font-size: 0.875rem;
+		color: var(--text-primary);
+		font-weight: 600;
+		background: var(--accent-primary);
+		color: white;
+		padding: 0.375rem 0.75rem;
+		border-radius: 4px;
+		width: fit-content;
+		transition: all var(--transition-normal);
+		border: 1px solid var(--accent-secondary);
+		letter-spacing: 0.025em;
+		box-shadow: var(--shadow-sm);
+		animation: slideIn 0.3s ease-out;
+	}
+
 	.app-version {
 		font-size: 0.75rem;
 		color: var(--text-tertiary);
@@ -263,7 +283,14 @@
 			font-size: 1.25rem;
 		}
 
+		.selected-algorithm {
+			font-size: 0.8rem;
+			padding: 0.25rem 0.5rem;
+		}
 
+		.title-section {
+			gap: 0.5rem;
+		}
 	}
 
 	.theme-toggle-switch {
@@ -322,5 +349,17 @@
 
 	.toggle-thumb.active svg {
 		color: white;
+	}
+
+	/* Animation for selected algorithm */
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateX(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
 	}
 </style>

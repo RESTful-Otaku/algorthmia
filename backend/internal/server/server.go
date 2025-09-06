@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"algorthmia/backend/internal/algorithm"
+	"algorthmia/backend/internal/algorithm/search"
 	"algorthmia/backend/internal/algorithm/sorting"
 	"algorthmia/backend/internal/api"
 	"algorthmia/backend/internal/config"
@@ -60,6 +61,27 @@ func NewServer(cfg *config.Config) *Server {
 	quickSort := sorting.NewQuickSort()
 	if err := algorithmManager.RegisterAlgorithm(quickSort); err != nil {
 		logger.WithError(err).Fatal("Failed to register quick sort algorithm")
+	}
+
+	// Register search algorithms
+	linearSearch := search.NewLinearSearch()
+	if err := algorithmManager.RegisterAlgorithm(linearSearch); err != nil {
+		logger.WithError(err).Fatal("Failed to register linear search algorithm")
+	}
+
+	binarySearch := search.NewBinarySearch()
+	if err := algorithmManager.RegisterAlgorithm(binarySearch); err != nil {
+		logger.WithError(err).Fatal("Failed to register binary search algorithm")
+	}
+
+	jumpSearch := search.NewJumpSearch()
+	if err := algorithmManager.RegisterAlgorithm(jumpSearch); err != nil {
+		logger.WithError(err).Fatal("Failed to register jump search algorithm")
+	}
+
+	interpolationSearch := search.NewInterpolationSearch()
+	if err := algorithmManager.RegisterAlgorithm(interpolationSearch); err != nil {
+		logger.WithError(err).Fatal("Failed to register interpolation search algorithm")
 	}
 
 	return &Server{

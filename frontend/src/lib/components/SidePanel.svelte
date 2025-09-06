@@ -14,7 +14,10 @@
 		ChevronDown, 
 		ChevronRight,
 		Settings,
-		Play
+		Play,
+		SortAsc,
+		Search as SearchIcon,
+		Network
 	} from 'lucide-svelte';
 	import Button from './ui/Button.svelte';
 	import Input from './ui/Input.svelte';
@@ -22,11 +25,62 @@
 	import Collapsible from './ui/Collapsible.svelte';
 	import type { Algorithm } from '$lib/types';
 
-	let searchInput = '';
+	let searchInput = $state('');
+
+	// State for collapsed sections
+	let collapsedSections = $state({
+		sorting: false,
+		search: false,
+		graph: false
+	} as Record<string, boolean>);
 
 	// Reactive search
-	$: if (searchInput !== $sidePanelState.searchQuery) {
-		setSearchQuery(searchInput);
+	$effect(() => {
+		if (searchInput !== $sidePanelState.searchQuery) {
+			setSearchQuery(searchInput);
+		}
+	});
+
+	// Group algorithms by type
+	let algorithmsByType = $derived($filteredAlgorithms.reduce((acc, algorithm) => {
+		if (!acc[algorithm.type]) {
+			acc[algorithm.type] = [];
+		}
+		acc[algorithm.type].push(algorithm);
+		return acc;
+	}, {} as Record<string, Algorithm[]>));
+
+	// Get category icon
+	function getCategoryIcon(type: string) {
+		switch (type) {
+			case 'sorting':
+				return SortAsc;
+			case 'search':
+				return SearchIcon;
+			case 'graph':
+				return Network;
+			default:
+				return SortAsc;
+		}
+	}
+
+	// Get category display name
+	function getCategoryDisplayName(type: string): string {
+		switch (type) {
+			case 'sorting':
+				return 'Sorting Algorithms';
+			case 'search':
+				return 'Search Algorithms';
+			case 'graph':
+				return 'Graph Algorithms';
+			default:
+				return type.charAt(0).toUpperCase() + type.slice(1);
+		}
+	}
+
+	// Toggle section collapse
+	function toggleSection(type: string) {
+		collapsedSections[type] = !collapsedSections[type];
 	}
 
 	function handleAlgorithmSelect(algorithm: Algorithm) {
@@ -111,44 +165,75 @@
 			</div>
 		</div>
 
-		<!-- Algorithm List -->
-		<div class="flex-1 overflow-y-auto p-4 space-y-2">
-			{#each $filteredAlgorithms as algorithm (algorithm.id)}
-				<Card
-					class="cursor-pointer transition-all duration-200 hover:shadow-md {$selectedAlgorithm?.id === algorithm.id ? 'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900' : ''}"
-					onClick={() => handleAlgorithmSelect(algorithm)}
-				>
-					<div class="flex items-start justify-between">
-						<div class="flex-1 min-w-0">
-							<div class="flex items-center space-x-2 mb-1">
-								<h3 class="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
-									{algorithm.name}
-								</h3>
-								<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {getAlgorithmTypeColor(algorithm.type)}">
-									{algorithm.type}
-								</span>
-							</div>
-							<p class="text-xs text-secondary-600 dark:text-secondary-400 line-clamp-2">
-								{algorithm.description}
-							</p>
-							<div class="flex items-center space-x-3 mt-2 text-xs text-secondary-500 dark:text-secondary-400">
-								<span>Time: {algorithm.time_complexity}</span>
-								<span>Space: {algorithm.space_complexity}</span>
-							</div>
+		<!-- Algorithm Categories -->
+		<div class="flex-1 overflow-y-auto p-4 space-y-3">
+			{#each Object.entries(algorithmsByType) as [type, algorithms] (type)}
+				{@const IconComponent = getCategoryIcon(type)}
+				{@const isCollapsed = collapsedSections[type]}
+				
+				<div class="category-section">
+					<!-- Category Header -->
+					<button
+						class="category-header"
+						onclick={() => toggleSection(type)}
+						aria-expanded={!isCollapsed}
+					>
+						<div class="flex items-center space-x-3">
+							<IconComponent class="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
+							<h3 class="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
+								{getCategoryDisplayName(type)}
+							</h3>
+							<span class="text-xs text-secondary-500 dark:text-secondary-400 bg-secondary-100 dark:bg-secondary-700 px-2 py-1 rounded-full">
+								{algorithms.length}
+							</span>
 						</div>
-						{#if $selectedAlgorithm?.id === algorithm.id}
-							<Button
-								variant="ghost"
-								size="sm"
-								onClick={() => {
-									toggleConfig();
-								}}
-							>
-								<Settings class="w-4 h-4" />
-							</Button>
+						{#if isCollapsed}
+							<ChevronRight class="w-4 h-4 text-secondary-500 dark:text-secondary-400 transition-transform duration-200" />
+						{:else}
+							<ChevronDown class="w-4 h-4 text-secondary-500 dark:text-secondary-400 transition-transform duration-200" />
 						{/if}
-					</div>
-				</Card>
+					</button>
+
+					<!-- Category Content -->
+					{#if !isCollapsed}
+						<div class="category-content">
+							{#each algorithms as algorithm (algorithm.id)}
+								<Card
+									class="algorithm-item {$selectedAlgorithm?.id === algorithm.id ? 'selected' : ''}"
+									onClick={() => handleAlgorithmSelect(algorithm)}
+								>
+									<div class="flex items-start justify-between">
+										<div class="flex-1 min-w-0">
+											<div class="flex items-center space-x-2 mb-1">
+												<h4 class="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
+													{algorithm.name}
+												</h4>
+											</div>
+											<p class="text-xs text-secondary-600 dark:text-secondary-400 line-clamp-2 mb-2">
+												{algorithm.description}
+											</p>
+											<div class="flex items-center space-x-3 text-xs text-secondary-500 dark:text-secondary-400">
+												<span>Time: {algorithm.time_complexity}</span>
+												<span>Space: {algorithm.space_complexity}</span>
+											</div>
+										</div>
+										{#if $selectedAlgorithm?.id === algorithm.id}
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => {
+													toggleConfig();
+												}}
+											>
+												<Settings class="w-4 h-4" />
+											</Button>
+										{/if}
+									</div>
+								</Card>
+							{/each}
+						</div>
+					{/if}
+				</div>
 			{/each}
 
 			{#if $filteredAlgorithms.length === 0}
@@ -223,3 +308,92 @@
 		{/if}
 	</div>
 </aside>
+
+<style>
+	.category-section {
+		border: 1px solid var(--border-primary);
+		border-radius: 8px;
+		overflow: hidden;
+		background: var(--bg-primary);
+		transition: all 0.2s ease;
+	}
+
+	.category-section:hover {
+		border-color: var(--border-secondary);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	.category-header {
+		width: 100%;
+		padding: 12px 16px;
+		background: var(--bg-tertiary);
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		transition: all 0.2s ease;
+	}
+
+	.category-header:hover {
+		background: var(--bg-quaternary);
+	}
+
+	.category-header:focus {
+		outline: 2px solid var(--accent-primary);
+		outline-offset: -2px;
+	}
+
+	.category-content {
+		padding: 8px;
+		background: var(--bg-primary);
+	}
+
+	.algorithm-item {
+		margin-bottom: 8px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		border: 1px solid var(--border-primary);
+	}
+
+	.algorithm-item:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		border-color: var(--border-secondary);
+	}
+
+	.algorithm-item.selected {
+		background: var(--accent-lighter);
+		border-color: var(--accent-primary);
+		box-shadow: 0 0 0 2px var(--accent-light);
+	}
+
+	.algorithm-item:last-child {
+		margin-bottom: 0;
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 1024px) {
+		.category-header {
+			padding: 10px 12px;
+		}
+		
+		.category-content {
+			padding: 6px;
+		}
+	}
+
+	/* Dark mode adjustments */
+	:global(.dark) .category-section {
+		border-color: var(--border-primary);
+	}
+
+	:global(.dark) .category-section:hover {
+		border-color: var(--border-secondary);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	}
+
+	:global(.dark) .algorithm-item:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	}
+</style>

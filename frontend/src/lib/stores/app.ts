@@ -34,6 +34,9 @@ export const controlState = writable<ControlState>({
 // Parameters store
 export const parameters = writable<Record<string, any>>({});
 
+// Modal state store
+export const isModalOpen = writable<boolean>(false);
+
 // Parameter actions
 export const setParameters = (newParameters: Record<string, any>) => {
   parameters.set(newParameters);
@@ -44,6 +47,11 @@ export const updateParameter = (key: string, value: any) => {
     ...current,
     [key]: value
   }));
+};
+
+// Modal actions
+export const setModalOpen = (open: boolean) => {
+  isModalOpen.set(open);
 };
 
 // Side panel state store
