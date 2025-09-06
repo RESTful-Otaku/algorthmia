@@ -79,6 +79,12 @@
 		return Math.max(min, Math.min(max, value));
 	}
 
+	// Initialize parameters store on mount
+	$effect(() => {
+		// Initialize store with default parameters
+		setParameters(getAlgorithmParameters());
+	});
+
 	// Reactive statements to clamp values
 	$effect(() => {
 		gridWidth = clampValue(gridWidth, 5, 15);

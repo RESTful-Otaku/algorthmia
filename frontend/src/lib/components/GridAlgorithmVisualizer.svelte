@@ -290,10 +290,15 @@
 		
 		container.innerHTML = '';
 		
+		// Get grid dimensions from parameters
+		const currentParams = $parameters;
+		const paramGridWidth = currentParams.gridWidth || 10;
+		const paramGridHeight = currentParams.gridHeight || 10;
+		
 		const gridElement = document.createElement('div');
 		gridElement.className = 'grid-container';
 		gridElement.style.display = 'grid';
-		gridElement.style.gridTemplateColumns = `repeat(5, 1fr)`;
+		gridElement.style.gridTemplateColumns = `repeat(${paramGridWidth}, 1fr)`;
 		gridElement.style.gap = '2px';
 		gridElement.style.padding = '1rem';
 		
