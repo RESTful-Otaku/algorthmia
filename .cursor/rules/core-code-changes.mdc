@@ -1,0 +1,10 @@
+---
+description: |
+  Allow AI to suggest changes only to source code files in the `src/` folder and ignore build files.
+globs:
+  - "src/**/*.ts"            # TypeScript source code
+  - "src/**/*.tsx"           # TypeScript with JSX
+  - "src/**/*.go"            # Go source code
+  - "src/**/*.svelte"        # Svelte files in the src folder
+alwaysApply: false
+---

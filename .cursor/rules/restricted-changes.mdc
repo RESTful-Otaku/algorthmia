@@ -1,0 +1,12 @@
+---
+description: |
+    Prevent AI from modifying build output, auto-generated files, or third-party code.
+globs: 
+  - "dist/**"               # Build output
+  - "**/*.gen.ts"            # Generated TypeScript files
+  - "**/*.pb.go"             # Generated Go files
+  - "**/*.min.js"            # Minified JavaScript
+  - "**/*.d.ts"              # TypeScript declaration files
+  - "**/vendor/**"           # Third-party dependencies
+alwaysApply: true
+---

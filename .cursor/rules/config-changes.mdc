@@ -1,0 +1,10 @@
+---
+description: |
+  Allow changes to configuration files (e.g., TypeScript config, Go mod, Svelte config).
+globs:
+  - "tsconfig.json"          # TypeScript config
+  - "go.mod"                 # Go module config
+  - "go.sum"                 # Go checksum file
+  - "svelte.config.js"       # Svelte config
+alwaysApply: false
+---

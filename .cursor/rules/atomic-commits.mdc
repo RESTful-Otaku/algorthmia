@@ -1,0 +1,9 @@
+---
+description: |
+  Encourage small, atomic commits by avoiding large-scale changes to entire folders unless explicitly necessary.
+globs:
+  - "src/**"                 # Source code (keep changes focused)
+  - "tests/**"               # Test files (avoid sweeping changes)
+  - "scripts/**"             # Scripts (avoid refactor-wide changes)
+alwaysApply: false
+---

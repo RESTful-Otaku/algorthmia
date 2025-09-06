@@ -1,0 +1,8 @@
+---
+description: |
+  Prevent AI from changing files outside the source or configuration directories unless necessary.
+globs:
+  - "**/*.js"                # JavaScript files (only in source or config folders)
+  - "**/*.json"              # JSON files (configuration only)
+alwaysApply: false
+---
