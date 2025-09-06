@@ -1,207 +1,175 @@
 #!/bin/bash
 
 # Algorthmia Deployment Script
-# This script handles building, testing, and deploying the application
+# Simple Fly.io deployment
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
+# Colors
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Configuration
-IMAGE_NAME="algorthmia"
-CONTAINER_NAME="algorthmia-app"
-PORT=${PORT:-80}
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
 
 # Functions
-log() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
+log() { echo -e "${BLUE}[INFO]${NC} $1"; }
+success() { echo -e "${GREEN}✅${NC} $1"; }
+warning() { echo -e "${YELLOW}⚠️${NC} $1"; }
+error() { echo -e "${RED}❌${NC} $1"; exit 1; }
 
-success() {
-    echo -e "${GREEN}✅ $1${NC}"
-}
-
-warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
-}
-
-error() {
-    echo -e "${RED}❌ $1${NC}"
-    exit 1
-}
-
-# Check if Docker is running
-check_docker() {
-    if ! docker info > /dev/null 2>&1; then
-        error "Docker is not running. Please start Docker and try again."
+# Check if flyctl is installed
+check_flyctl() {
+    if ! command -v flyctl &> /dev/null; then
+        error "flyctl not found. Please install it from https://fly.io/docs/hands-on/install-flyctl/"
     fi
-    success "Docker is running"
 }
 
-# Build the Docker image
-build_image() {
+# Check if authenticated
+check_auth() {
+    if ! flyctl auth whoami &> /dev/null; then
+        error "Not logged in to Fly.io. Please run 'flyctl auth login' first"
+    fi
+}
+
+# Build and test locally
+build_and_test() {
     log "Building Docker image..."
-    docker build -t $IMAGE_NAME:latest .
-    success "Docker image built successfully"
-}
-
-# Test the Docker image
-test_image() {
-    log "Testing Docker image..."
+    docker build -f Dockerfile.fly -t algorthmia:fly .
+    success "Docker image built"
     
-    # Start container
-    docker run --name ${CONTAINER_NAME}-test -d -p $PORT:80 $IMAGE_NAME:latest
+    log "Testing locally..."
+    docker run --name algorthmia-test -d -p 80:80 algorthmia:fly
+    sleep 5
     
-    # Wait for container to start
-    sleep 10
-    
-    # Test health endpoint
-    if curl -f http://localhost:$PORT/health > /dev/null 2>&1; then
+    if curl -f http://localhost/health > /dev/null 2>&1; then
         success "Health check passed"
     else
         error "Health check failed"
     fi
     
-    # Test main page
-    if curl -f http://localhost:$PORT/ > /dev/null 2>&1; then
+    if curl -f http://localhost/ > /dev/null 2>&1; then
         success "Main page accessible"
     else
         error "Main page not accessible"
     fi
     
-    # Cleanup test container
-    docker stop ${CONTAINER_NAME}-test
-    docker rm ${CONTAINER_NAME}-test
-    success "Container test completed"
+    docker stop algorthmia-test
+    docker rm algorthmia-test
+    success "Local test completed"
 }
 
-# Deploy the application
+# Deploy to Fly.io
 deploy() {
-    log "Deploying application..."
-    
-    # Stop existing container if running
-    if docker ps -q -f name=$CONTAINER_NAME | grep -q .; then
-        log "Stopping existing container..."
-        docker stop $CONTAINER_NAME
-        docker rm $CONTAINER_NAME
-    fi
-    
-    # Start new container
-    docker run --name $CONTAINER_NAME -d -p $PORT:80 \
-        -e NODE_ENV=production \
-        -e API_BASE_URL=${API_BASE_URL:-https://algorthmia-api.herokuapp.com} \
-        $IMAGE_NAME:latest
-    
-    success "Application deployed successfully"
-    log "Application is running at http://localhost:$PORT"
+    log "Deploying to Fly.io..."
+    flyctl deploy --dockerfile Dockerfile.fly
+    success "Deployed to Fly.io"
+}
+
+# Show app info
+info() {
+    log "Getting app information..."
+    flyctl info
+    flyctl status
 }
 
 # Show logs
-show_logs() {
-    log "Showing application logs..."
-    docker logs -f $CONTAINER_NAME
+logs() {
+    log "Showing app logs..."
+    flyctl logs
 }
 
-# Stop the application
-stop() {
-    log "Stopping application..."
-    if docker ps -q -f name=$CONTAINER_NAME | grep -q .; then
-        docker stop $CONTAINER_NAME
-        docker rm $CONTAINER_NAME
-        success "Application stopped"
-    else
-        warning "Application is not running"
-    fi
+# Scale app
+scale() {
+    local instances=${1:-1}
+    log "Scaling to $instances instances..."
+    flyctl scale count $instances
+    success "Scaled to $instances instances"
 }
 
-# Show status
-status() {
-    if docker ps -q -f name=$CONTAINER_NAME | grep -q .; then
-        success "Application is running"
-        docker ps -f name=$CONTAINER_NAME
-    else
-        warning "Application is not running"
-    fi
+# Open app
+open() {
+    log "Opening app in browser..."
+    flyctl open
 }
 
-# Clean up
-cleanup() {
-    log "Cleaning up..."
+# Set environment variables
+set_env() {
+    local key=$1
+    local value=$2
     
-    # Stop and remove container
-    if docker ps -q -f name=$CONTAINER_NAME | grep -q .; then
-        docker stop $CONTAINER_NAME
-        docker rm $CONTAINER_NAME
+    if [ -z "$key" ] || [ -z "$value" ]; then
+        error "Usage: set_env <key> <value>"
     fi
     
-    # Remove image
-    if docker images -q $IMAGE_NAME | grep -q .; then
-        docker rmi $IMAGE_NAME:latest
-    fi
-    
-    # Clean up dangling images
-    docker image prune -f
-    
-    success "Cleanup completed"
+    log "Setting $key..."
+    flyctl secrets set $key="$value"
+    success "Environment variable set"
+}
+
+# Show help
+help() {
+    echo "Algorthmia Deployment Script"
+    echo ""
+    echo "Usage: $0 [command] [args...]"
+    echo ""
+    echo "Commands:"
+    echo "  deploy     - Deploy to Fly.io (default)"
+    echo "  build      - Build and test locally"
+    echo "  info       - Show app information"
+    echo "  logs       - Show app logs"
+    echo "  scale N    - Scale to N instances"
+    echo "  open       - Open app in browser"
+    echo "  set-env    - Set environment variable"
+    echo "  help       - Show this help"
+    echo ""
+    echo "Examples:"
+    echo "  $0 deploy                    # Deploy to Fly.io"
+    echo "  $0 build                     # Build and test locally"
+    echo "  $0 scale 3                   # Scale to 3 instances"
+    echo "  $0 set-env API_URL https://api.example.com"
 }
 
 # Main script
-main() {
-    case "${1:-deploy}" in
-        "build")
-            check_docker
-            build_image
-            ;;
-        "test")
-            check_docker
-            build_image
-            test_image
-            ;;
-        "deploy")
-            check_docker
-            build_image
-            test_image
-            deploy
-            ;;
-        "logs")
-            show_logs
-            ;;
-        "stop")
-            stop
-            ;;
-        "status")
-            status
-            ;;
-        "cleanup")
-            cleanup
-            ;;
-        "help"|"-h"|"--help")
-            echo "Usage: $0 [command]"
-            echo ""
-            echo "Commands:"
-            echo "  build     Build Docker image"
-            echo "  test      Build and test Docker image"
-            echo "  deploy    Build, test, and deploy application (default)"
-            echo "  logs      Show application logs"
-            echo "  stop      Stop application"
-            echo "  status    Show application status"
-            echo "  cleanup   Clean up containers and images"
-            echo "  help      Show this help message"
-            echo ""
-            echo "Environment variables:"
-            echo "  PORT              Port to run on (default: 80)"
-            echo "  API_BASE_URL      Backend API URL"
-            ;;
-        *)
-            error "Unknown command: $1. Use 'help' for usage information."
-            ;;
-    esac
-}
-
-# Run main function with all arguments
-main "$@"
+case "${1:-deploy}" in
+    "deploy")
+        check_flyctl
+        check_auth
+        build_and_test
+        deploy
+        ;;
+    "build")
+        build_and_test
+        ;;
+    "info")
+        check_flyctl
+        check_auth
+        info
+        ;;
+    "logs")
+        check_flyctl
+        check_auth
+        logs
+        ;;
+    "scale")
+        check_flyctl
+        check_auth
+        scale $2
+        ;;
+    "open")
+        check_flyctl
+        check_auth
+        open
+        ;;
+    "set-env")
+        check_flyctl
+        check_auth
+        set_env $2 $3
+        ;;
+    "help"|"-h"|"--help")
+        help
+        ;;
+    *)
+        error "Unknown command: $1. Use 'help' for usage information."
+        ;;
+esac

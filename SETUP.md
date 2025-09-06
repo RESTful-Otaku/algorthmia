@@ -1,105 +1,104 @@
-# Setup Guide
+# 🚀 Setup Guide
 
-This guide will help you get the project running locally.
+Quick setup instructions for Algorthmia development and deployment.
 
-## Prerequisites
+## 📋 Prerequisites
 
-- **Node.js** (v18 or higher)
-- **Go** (v1.21 or higher)
-- **Docker** (optional, for containerized deployment)
+- **Node.js 20+** - [Download](https://nodejs.org/)
+- **Go 1.23+** - [Download](https://golang.org/dl/)
+- **Docker** - [Download](https://www.docker.com/)
+- **Git** - [Download](https://git-scm.com/)
 
-## Quick Start
+## 🛠️ Development Setup
 
-### 1. Clone the Repository
+### 1. Clone Repository
+
 ```bash
-git clone <repository-url>
+git clone https://github.com/yourusername/algorthmia.git
 cd algorthmia
 ```
 
-### 2. Backend Setup
-```bash
-cd backend
-go mod download
-go run cmd/server/main.go
-```
-
-The backend will start on `http://localhost:8080`
-
-### 3. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend will start on `http://localhost:5173`
-
-## Environment Variables
-
-### Backend
-The backend uses default configuration. You can override settings by setting environment variables:
-- `BACKEND_PORT` (default: 8080)
-- `BACKEND_HOST` (default: localhost)
-
-### Frontend
-Create a `.env` file in the frontend directory:
-```bash
-VITE_API_BASE_URL=http://localhost:8080
-```
-
-## Development
-
-### Running Tests
-```bash
-# Backend tests
-cd backend
-go test ./...
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Building for Production
-```bash
-# Backend
-cd backend
-go build -o bin/server cmd/server/main.go
-
-# Frontend
-cd frontend
-npm run build
-```
-
-## Docker Deployment
+### 2. Start Development
 
 ```bash
-# Build and run with Docker Compose
-docker-compose up --build
+# Make scripts executable
+chmod +x dev.sh deploy.sh
+
+# Start development environment
+./dev.sh
 ```
 
-## Project Structure
+### 3. Access Application
 
-```
-algorthmia/
-├── backend/           # Go backend API
-├── frontend/          # SvelteKit frontend
-├── docs/             # Documentation
-├── docker-compose.yml # Docker configuration
-├── Dockerfile        # Docker image
-└── README.md         # Project overview
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:8080
+
+## 🚀 Production Deployment
+
+### 1. Install Fly.io CLI
+
+```bash
+curl -L https://fly.io/install.sh | sh
+export PATH="$HOME/.fly/bin:$PATH"
 ```
 
-## Troubleshooting
+### 2. Login to Fly.io
+
+```bash
+flyctl auth login
+```
+
+### 3. Deploy
+
+```bash
+./deploy.sh
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+./dev.sh test
+
+# Run specific tests
+cd frontend && npm test
+cd backend && go test ./...
+```
+
+## 🔧 Troubleshooting
 
 ### Common Issues
 
-1. **Port already in use**: Change the port in the configuration files
-2. **Node modules issues**: Delete `node_modules` and run `npm install` again
-3. **Go module issues**: Run `go mod tidy` in the backend directory
+**Port already in use:**
+```bash
+# Kill processes on ports 8080 and 5173
+lsof -ti:8080 | xargs kill -9
+lsof -ti:5173 | xargs kill -9
+```
+
+**Dependencies not found:**
+```bash
+# Install dependencies
+./dev.sh install
+```
+
+**Docker build fails:**
+```bash
+# Clean Docker cache
+docker system prune -a
+```
 
 ### Getting Help
 
-- Check the logs in the terminal for error messages
-- Ensure all prerequisites are installed
-- Verify that ports 8080 and 5173 are available
+- Check the [README](README.md) for detailed documentation
+- Open an [issue](https://github.com/yourusername/algorthmia/issues) for bugs
+- Start a [discussion](https://github.com/yourusername/algorthmia/discussions) for questions
+
+## 📚 Next Steps
+
+1. **Explore the codebase** - Check out the project structure
+2. **Run the tests** - Ensure everything works
+3. **Make changes** - Start developing your features
+4. **Deploy** - Push your changes to production
+
+Happy coding! 🎉
